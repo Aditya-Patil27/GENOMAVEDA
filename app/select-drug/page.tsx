@@ -165,7 +165,7 @@ export default function SelectDrugPage() {
                 <Shield className="w-5 h-5 text-teal-500" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">PharmaGuard</h1>
+                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
                 <p className="text-xs text-slate-400">v2.4.0</p>
               </div>
             </div>
@@ -274,7 +274,7 @@ export default function SelectDrugPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center gap-4">
-              <span>PharmaGuard v2.4.0</span>
+              <span>GenomaVeda v2.4.0</span>
               <span>•</span>
               <span>RIFT 2026 Hackathon</span>
               <span>•</span>

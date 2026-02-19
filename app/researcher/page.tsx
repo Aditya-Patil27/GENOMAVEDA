@@ -22,7 +22,7 @@ export default function ResearcherPage() {
                 <Shield className="w-5 h-5 text-teal-500" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">PharmaGuard</h1>
+                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
                 <p className="text-xs text-teal-400 font-medium">RESEARCHER SANDBOX</p>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function ResearcherPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center gap-4">
-              <span>PharmaGuard Research v2.4.0</span>
+              <span>GenomaVeda Research v2.4.0</span>
               <span>•</span>
               <span>RIFT 2026 Hackathon</span>
             </div>
