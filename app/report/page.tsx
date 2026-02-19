@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, CheckCircle2, FileText, ArrowLeft } from "lucide-react";
 import RiskDashboard from "@/components/RiskDashboard";
 import ProgressIndicator from "@/components/ProgressIndicator";
+import ProcessingOverlay from "@/components/ProcessingOverlay";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 
 export default function ReportPage() {
   const router = useRouter();
   const { analysisResult } = usePharmaGuard();
+  const [showOverlay, setShowOverlay] = useState(true);
 
   useEffect(() => {
     // Route Guard: Redirect if no results
@@ -17,6 +19,10 @@ export default function ReportPage() {
       router.push("/upload");
     }
   }, [analysisResult, router]);
+
+  const handleOverlayComplete = () => {
+    setShowOverlay(false);
+  };
 
   if (!analysisResult || analysisResult.length === 0) {
     return null; // Will redirect in useEffect
@@ -81,7 +87,9 @@ export default function ReportPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 pb-16">
+      <div className="max-w-7xl mx-auto px-6 pb-16 relative">
+        {showOverlay && <ProcessingOverlay onComplete={handleOverlayComplete} />}
+        
         <div className="clinical-card p-6">
           <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
             <div className="flex items-center gap-3">
