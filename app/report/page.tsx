@@ -2,8 +2,9 @@
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, CheckCircle2, FileText } from "lucide-react";
+import { Shield, CheckCircle2, FileText, ArrowLeft } from "lucide-react";
 import RiskDashboard from "@/components/RiskDashboard";
+import ProgressIndicator from "@/components/ProgressIndicator";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 
 export default function ReportPage() {
@@ -11,7 +12,7 @@ export default function ReportPage() {
   const { analysisResult } = usePharmaGuard();
 
   useEffect(() => {
-    // Redirect if no results
+    // Route Guard: Redirect if no results
     if (!analysisResult || analysisResult.length === 0) {
       router.push("/upload");
     }
@@ -57,8 +58,20 @@ export default function ReportPage() {
         </div>
       </header>
 
+      {/* Progress Indicator */}
+      <ProgressIndicator />
+
       {/* Main Title */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => router.push("/select-drug")}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
         <h2 className="text-2xl font-semibold text-slate-100 mb-2">
           Pharmacogenomic Risk Assessment Platform
         </h2>

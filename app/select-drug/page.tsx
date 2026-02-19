@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, CheckCircle2, FileText, Pill, Loader2 } from "lucide-react";
+import { Shield, CheckCircle2, FileText, Pill, Loader2, ArrowLeft } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import DrugSelector from "@/components/DrugSelector";
+import ProgressIndicator from "@/components/ProgressIndicator";
 import { Drug, DRUG_GENE_MAP, AnalysisResult } from "@/lib/types";
 import { resolveDiplotype } from "@/lib/diplotype-lookup";
 import { assessRisk } from "@/lib/risk-engine";
@@ -17,7 +18,7 @@ export default function SelectDrugPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
-    // Redirect if no VCF data
+    // Route Guard: Redirect if no VCF data
     if (!parsedVCFData) {
       router.push("/upload");
     }
@@ -187,8 +188,20 @@ export default function SelectDrugPage() {
         </div>
       </header>
 
+      {/* Progress Indicator */}
+      <ProgressIndicator />
+
       {/* Main Title */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => router.push("/upload")}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
         <h2 className="text-2xl font-semibold text-slate-100 mb-2">
           Pharmacogenomic Risk Assessment Platform
         </h2>
@@ -243,6 +256,15 @@ export default function SelectDrugPage() {
                 </span>
               )}
             </button>
+          )}
+
+          {/* Disabled State Message */}
+          {selectedDrugs.length === 0 && (
+            <div className="mt-4 p-3 bg-slate-700/30 border border-slate-600 rounded-lg">
+              <p className="text-xs text-slate-400 text-center">
+                Select at least one drug to continue
+              </p>
+            </div>
           )}
         </div>
       </div>

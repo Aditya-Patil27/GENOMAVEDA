@@ -4,6 +4,7 @@ import React, { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, CheckCircle2, FileText } from "lucide-react";
 import Dropzone from "@/components/Dropzone";
+import ProgressIndicator from "@/components/ProgressIndicator";
 import { parseVCF, ParsedVCF } from "@/lib/vcf-parser";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 
@@ -60,6 +61,9 @@ export default function UploadPage() {
           </div>
         </div>
       </header>
+
+      {/* Progress Indicator */}
+      <ProgressIndicator />
 
       {/* Main Title */}
       <div className="max-w-7xl mx-auto px-6 py-8">
