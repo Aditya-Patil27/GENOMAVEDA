@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { PharmaGuardProvider } from "@/context/PharmaGuardContext";
 
 export const metadata: Metadata = {
   title: "PharmaGuard — Pharmacogenomic Risk Prediction",
@@ -31,7 +32,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <div className="relative z-10">{children}</div>
+        <PharmaGuardProvider>
+          <div className="relative z-10">{children}</div>
+        </PharmaGuardProvider>
       </body>
     </html>
   );

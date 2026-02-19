@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Drug, DRUG_GENE_MAP, ALL_DRUGS } from "@/lib/types";
+import { CheckCircle2 } from "lucide-react";
 
 interface DrugSelectorProps {
   selectedDrugs: Drug[];
@@ -35,12 +36,8 @@ export default function DrugSelector({
   };
 
   return (
-    <div className="w-full animate-slide-up stagger-3">
-      <h3 className="text-offwhite font-heading font-semibold text-lg mb-4 flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-teal-400 inline-block" />
-        Select Drugs for Analysis
-      </h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ALL_DRUGS.map((drug) => {
           const gene = DRUG_GENE_MAP[drug];
           const isSelected = selectedDrugs.includes(drug);
@@ -53,31 +50,39 @@ export default function DrugSelector({
               disabled={isDisabled}
               title={isDisabled ? `${gene} not detected in uploaded VCF` : `Analyze ${drug} — ${gene}`}
               className={`
-                relative p-4 rounded text-left transition-all duration-200
+                relative p-4 rounded-lg text-left transition-all border
                 ${
                   isSelected
-                    ? "glass border-teal-400 border bg-teal-400/10 border-glow-teal"
+                    ? "bg-slate-700 border-teal-500 ring-1 ring-teal-500/50"
                     : isDisabled
-                    ? "glass opacity-40 cursor-not-allowed border-transparent"
-                    : "glass border-transparent hover:border-teal-400/30 cursor-pointer"
+                    ? "bg-slate-800/50 border-slate-700 opacity-40 cursor-not-allowed"
+                    : "bg-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer"
                 }
               `}
             >
               {isSelected && (
-                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                <div className="absolute top-3 right-3">
+                  <CheckCircle2 className="w-4 h-4 text-teal-500" />
+                </div>
               )}
-              <p className={`font-heading font-semibold text-sm ${isSelected ? "text-teal-400" : "text-offwhite"}`}>
-                {drug}
-              </p>
-              <p className="font-mono text-xs text-muted mt-1">{gene}</p>
-              <p className="text-xs text-muted/70 mt-0.5">{drugDescriptions[drug]}</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className={`text-xs font-mono mb-1 ${isSelected ? "text-teal-400" : "text-slate-400"}`}>
+                    {gene}
+                  </p>
+                  <p className={`font-semibold text-sm ${isSelected ? "text-slate-100" : "text-slate-200"}`}>
+                    {drug}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">{drugDescriptions[drug]}</p>
+                </div>
+              </div>
             </button>
           );
         })}
       </div>
       {selectedDrugs.length > 0 && (
-        <p className="text-teal-400/80 text-xs mt-3">
-          {selectedDrugs.length} drug{selectedDrugs.length > 1 ? "s" : ""} selected
+        <p className="text-xs text-teal-400 mt-3">
+          {selectedDrugs.length} drug{selectedDrugs.length > 1 ? "s" : ""} selected for analysis
         </p>
       )}
     </div>
