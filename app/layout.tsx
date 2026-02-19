@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PharmaGuardProvider } from "@/context/PharmaGuardContext";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -47,21 +48,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="antialiased">
-        <div className="relative z-10">{children}</div>
-        {/* Service Worker Registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(r => console.log('[PharmaGuard] SW registered:', r.scope))
-                    .catch(e => console.log('[PharmaGuard] SW registration failed:', e));
-                });
-              }
-            `,
-          }}
-        />
+        <PharmaGuardProvider>
+          <div className="relative z-10">{children}</div>
+        </PharmaGuardProvider>
       </body>
     </html>
   );

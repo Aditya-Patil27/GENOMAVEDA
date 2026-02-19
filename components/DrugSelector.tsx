@@ -1,130 +1,81 @@
 "use client";
 
-import React, { useState } from "react";
-import { DrugInfo } from "@/lib/drug-registry";
+import React from "react";
+import { Drug, DRUG_GENE_MAP, ALL_DRUGS } from "@/lib/types";
+import { CheckCircle2 } from "lucide-react";
 
 interface DrugSelectorProps {
-  selectedDrugs: string[];
-  onSelectionChange: (drugs: string[]) => void;
+  selectedDrugs: Drug[];
+  onSelectionChange: (drugs: Drug[]) => void;
   detectedGenes: string[];
-  drugList: DrugInfo[];
-  isLoadingDrugs: boolean;
 }
+
+const drugDescriptions: Record<Drug, string> = {
+  CLOPIDOGREL: "Antiplatelet agent",
+  WARFARIN: "Anticoagulant",
+  SIMVASTATIN: "Statin for cholesterol",
+  CODEINE: "Opioid analgesic",
+  CARBAMAZEPINE: "Anticonvulsant",
+};
 
 export default function DrugSelector({
   selectedDrugs,
   onSelectionChange,
   detectedGenes,
-  drugList,
-  isLoadingDrugs,
 }: DrugSelectorProps) {
-  const [showAll, setShowAll] = useState(false);
-
-  const visibleDrugs = showAll
-    ? drugList
-    : drugList.filter((d) => d.featured || selectedDrugs.includes(d.nameUpper));
-
-  const toggleDrug = (drugName: string, gene: string) => {
-    if (detectedGenes.length > 0 && gene && !detectedGenes.includes(gene)) return;
-
-    if (selectedDrugs.includes(drugName)) {
-      onSelectionChange(selectedDrugs.filter((d) => d !== drugName));
+  const toggleDrug = (drug: Drug) => {
+    if (selectedDrugs.includes(drug)) {
+      onSelectionChange(selectedDrugs.filter((d) => d !== drug));
     } else {
-      onSelectionChange([...selectedDrugs, drugName]);
+      onSelectionChange([...selectedDrugs, drug]);
     }
   };
 
-  const featuredCount = drugList.filter((d) => d.featured).length;
-  const totalCount = drugList.length;
-
   return (
-    <div className="w-full animate-slide-up stagger-3">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-offwhite font-heading font-semibold text-lg flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-teal-400 inline-block" />
-          Select Drugs for Analysis
-        </h3>
-        <div className="flex items-center gap-3">
-          {/* Live CPIC indicator */}
-          {totalCount > featuredCount && (
-            <span className="flex items-center gap-1.5 text-xs text-teal-400/80 font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-              Live CPIC Data · {totalCount} drugs
-            </span>
-          )}
-          {totalCount > featuredCount && (
+    <div className="w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {ALL_DRUGS.map((drug) => {
+          const gene = DRUG_GENE_MAP[drug];
+          const isSelected = selectedDrugs.includes(drug);
+          const isDisabled = detectedGenes.length > 0 && !detectedGenes.includes(gene);
+
+          return (
             <button
-              onClick={() => setShowAll(!showAll)}
-              className="text-xs font-mono text-muted hover:text-teal-400 transition-colors underline underline-offset-2"
-            >
-              {showAll ? `Show Featured (${featuredCount})` : `Show All (${totalCount})`}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {isLoadingDrugs ? (
-        <div className="flex items-center justify-center py-8 text-muted text-sm">
-          <span className="animate-spin mr-2">⟳</span>
-          Loading CPIC drug registry...
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {visibleDrugs.map((drug) => {
-            const isSelected = selectedDrugs.includes(drug.nameUpper);
-            const isDisabled =
-              detectedGenes.length > 0 && drug.gene && !detectedGenes.includes(drug.gene);
-
-            return (
-              <button
-                key={drug.drugId || drug.nameUpper}
-                onClick={() => toggleDrug(drug.nameUpper, drug.gene)}
-                disabled={!!isDisabled}
-                title={
-                  isDisabled
-                    ? `${drug.gene} not detected in uploaded VCF`
-                    : `Analyze ${drug.name} — ${drug.gene || "gene TBD"}`
+              key={drug}
+              onClick={() => toggleDrug(drug)}
+              disabled={isDisabled}
+              title={isDisabled ? `${gene} not detected in uploaded VCF` : `Analyze ${drug} — ${gene}`}
+              className={`
+                relative p-4 rounded-lg text-left transition-all border
+                ${
+                  isSelected
+                    ? "bg-slate-700 border-teal-500 ring-1 ring-teal-500/50"
+                    : isDisabled
+                    ? "bg-slate-800/50 border-slate-700 opacity-40 cursor-not-allowed"
+                    : "bg-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer"
                 }
-                className={`
-                  relative p-4 rounded text-left transition-all duration-200
-                  ${
-                    isSelected
-                      ? "glass border-teal-400 border bg-teal-400/10 border-glow-teal"
-                      : isDisabled
-                      ? "glass opacity-40 cursor-not-allowed border-transparent"
-                      : "glass border-transparent hover:border-teal-400/30 cursor-pointer"
-                  }
-                `}
-              >
-                {isSelected && (
-                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-                )}
-                {drug.featured && !isSelected && (
-                  <div className="absolute top-2 right-2 text-[8px] font-mono text-teal-400/40 uppercase tracking-wider">
-                    Featured
-                  </div>
-                )}
-                <p
-                  className={`font-heading font-semibold text-sm ${
-                    isSelected ? "text-teal-400" : "text-offwhite"
-                  }`}
-                >
-                  {drug.nameUpper}
-                </p>
-                <p className="font-mono text-xs text-muted mt-1">
-                  {drug.gene || "—"}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {selectedDrugs.length > 0 && (
-        <p className="text-teal-400/80 text-xs mt-3">
-          {selectedDrugs.length} drug{selectedDrugs.length > 1 ? "s" : ""} selected
-        </p>
-      )}
+              `}
+            >
+              {isSelected && (
+                <div className="absolute top-3 right-3">
+                  <CheckCircle2 className="w-4 h-4 text-teal-500" />
+                </div>
+              )}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className={`text-xs font-mono mb-1 ${isSelected ? "text-teal-400" : "text-slate-400"}`}>
+                    {gene}
+                  </p>
+                  <p className={`font-semibold text-sm ${isSelected ? "text-slate-100" : "text-slate-200"}`}>
+                    {drug}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">{drugDescriptions[drug]}</p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
