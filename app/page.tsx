@@ -32,12 +32,12 @@ export default function SplashPage() {
 
       {/* Logo and Animated Title Text */}
       <div className="relative z-10 text-center animate-fade-in-scale">
-        <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="flex items-center justify-center mb-8">
           <Image
             src="/assets/image/logo.png"
             alt="GenomaVeda Logo"
-            width={80}
-            height={80}
+            width={120}
+            height={120}
             className="object-contain"
           />
         </div>
