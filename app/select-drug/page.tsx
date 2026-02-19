@@ -138,7 +138,7 @@ export default function SelectDrugPage() {
       // Store in context
       setSelectedDrug(selectedDrugs);
       setAnalysisResult(analysisResults);
-      
+
       // Navigate to report
       router.push("/report");
     } catch (error) {
@@ -153,7 +153,7 @@ export default function SelectDrugPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm">
       {/* Header */}
       <header className="border-b border-slate-700 bg-slate-800/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -237,10 +237,9 @@ export default function SelectDrugPage() {
               disabled={isAnalyzing}
               className={`
                 w-full mt-4 py-3 rounded-lg font-medium text-sm transition-all
-                ${
-                  isAnalyzing
-                    ? "bg-slate-700 text-slate-400 cursor-wait"
-                    : "bg-teal-500 text-white hover:bg-teal-600"
+                ${isAnalyzing
+                  ? "bg-slate-700 text-slate-400 cursor-wait"
+                  : "bg-teal-500 text-white hover:bg-teal-600"
                 }
               `}
             >

@@ -11,7 +11,7 @@ export default function ResearcherPage() {
   const [activeTab, setActiveTab] = useState<"vcf" | "evidence">("vcf");
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm">
       {/* Header */}
       <header className="border-b border-slate-700 bg-slate-800/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -44,7 +44,7 @@ export default function ResearcherPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        
+
         {/* Navigation & Intro */}
         <div className="mb-8">
           <button
@@ -54,12 +54,12 @@ export default function ResearcherPage() {
             <ArrowLeft className="w-4 h-4" />
             Back to Patient View
           </button>
-          
+
           <h2 className="text-3xl font-semibold text-slate-100 mb-2">
             Pharmacogenomics Research Tools
           </h2>
           <p className="text-slate-400 max-w-2xl">
-            Advanced utilities for bioinformatics algorithm validation and clinical evidence exploration. 
+            Advanced utilities for bioinformatics algorithm validation and clinical evidence exploration.
             Generate mathematically accurate synthetic VCF payloads or query the CPIC knowledge base directly.
           </p>
         </div>
@@ -70,10 +70,9 @@ export default function ResearcherPage() {
             onClick={() => setActiveTab("vcf")}
             className={`
               flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors
-              ${
-                activeTab === "vcf"
-                  ? "border-teal-500 text-teal-400 bg-teal-500/5"
-                  : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
+              ${activeTab === "vcf"
+                ? "border-teal-500 text-teal-400 bg-teal-500/5"
+                : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
               }
             `}
           >
@@ -84,10 +83,9 @@ export default function ResearcherPage() {
             onClick={() => setActiveTab("evidence")}
             className={`
               flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors
-              ${
-                activeTab === "evidence"
-                  ? "border-amber-500 text-amber-400 bg-amber-500/5"
-                  : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
+              ${activeTab === "evidence"
+                ? "border-amber-500 text-amber-400 bg-amber-500/5"
+                : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
               }
             `}
           >
