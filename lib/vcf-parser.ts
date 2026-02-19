@@ -1,3 +1,5 @@
+import { resolveRsidToStar } from "./variant-resolver";
+
 export interface ParsedVariant {
   rsid: string;
   gene: string;
@@ -90,8 +92,13 @@ export function parseVCF(content: string): ParsedVCF {
       // Only include variants with alt allele called
       if (!alleles.includes("1") && !alleles.includes("2")) continue;
 
-      const starAllele = infoMap["STAR"] || "unknown";
       const rsid = infoMap["RS"] || id || "rs_unknown";
+      // Dynamic star allele resolution: prefer STAR= tag, fallback to rsID lookup
+      let starAllele = infoMap["STAR"] || "";
+      if (!starAllele && rsid && rsid !== "rs_unknown") {
+        starAllele = resolveRsidToStar(rsid, gene);
+      }
+      if (!starAllele) starAllele = "unknown";
 
       variants.push({
         rsid,
@@ -102,7 +109,7 @@ export function parseVCF(content: string): ParsedVCF {
         alt_allele: alt,
         zygosity,
         star_allele: starAllele,
-        clinical_significance: `${starAllele} variant in ${gene}`,
+        clinical_significance: starAllele !== "unknown" ? `${starAllele} variant in ${gene}` : `Variant at ${rsid} in ${gene}`,
         gt,
       });
     }

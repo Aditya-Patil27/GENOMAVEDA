@@ -34,3 +34,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# CPIC reference data (not used at runtime — live API instead)
+summaryAnnotations/
+guidelineAnnotations.json/
+cpic_db_dump*.sql
+data/cpic-diplotypes.json
+data/drug-gene-rules.json

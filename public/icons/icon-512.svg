@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="80" fill="#0A0F1E"/>
+  <rect x="8" y="8" width="496" height="496" rx="72" stroke="#00E5CC" stroke-width="3" stroke-opacity="0.3"/>
+  <!-- Flask icon -->
+  <path d="M210 120h92v100l68 132c5 10-2 22-14 22H156c-12 0-19-12-14-22l68-132V120z" stroke="#00E5CC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#00E5CC" fill-opacity="0.1"/>
+  <path d="M198 120h116" stroke="#00E5CC" stroke-width="8" stroke-linecap="round"/>
+  <!-- Bubbles -->
+  <circle cx="232" cy="290" r="12" fill="#00E5CC" fill-opacity="0.6"/>
+  <circle cx="276" cy="310" r="10" fill="#00C896" fill-opacity="0.5"/>
+  <circle cx="250" cy="320" r="8" fill="#00E5CC" fill-opacity="0.4"/>
+  <!-- DNA helix -->
+  <path d="M348 150c22 32 22 64 0 96s-22 64 0 96" stroke="#00E5CC" stroke-width="4" stroke-opacity="0.4" stroke-linecap="round"/>
+  <path d="M380 150c-22 32-22 64 0 96s22 64 0 96" stroke="#00C896" stroke-width="4" stroke-opacity="0.3" stroke-linecap="round"/>
+  <!-- Text -->
+  <text x="256" y="430" text-anchor="middle" fill="#E8EFF7" font-family="sans-serif" font-weight="700" font-size="36">PharmaGuard</text>
+</svg>

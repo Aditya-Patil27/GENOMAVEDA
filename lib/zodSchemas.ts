@@ -1,23 +1,8 @@
 import { z } from "zod";
 
-// ---- Enums ----
-export const DrugEnum = z.enum([
-  "CODEINE",
-  "WARFARIN",
-  "CLOPIDOGREL",
-  "SIMVASTATIN",
-  "AZATHIOPRINE",
-  "FLUOROURACIL",
-]);
-
-export const GeneEnum = z.enum([
-  "CYP2D6",
-  "CYP2C19",
-  "CYP2C9",
-  "SLCO1B1",
-  "TPMT",
-  "DPYD",
-]);
+// ─── Enums (now flexible strings for dynamic data) ──────────────
+// Previously hardcoded to 6 drugs/genes. Now accepts any string
+// that passes through CPIC API validation.
 
 export const PhenotypeEnum = z.enum(["PM", "IM", "NM", "RM", "URM", "Unknown"]);
 
@@ -31,16 +16,22 @@ export const RiskLabelEnum = z.enum([
 
 export const SeverityEnum = z.enum(["none", "low", "moderate", "high", "critical"]);
 
-// ---- Request Schema (for /api/analyze) ----
+// ─── Request Schema (for /api/analyze) ──────────────────────────
 export const AnalyzeRequestSchema = z.object({
   patient_id: z.string(),
-  drug: DrugEnum,
-  primary_gene: GeneEnum,
+  drug: z.string().min(1),             // Dynamic: accepts any CPIC drug
+  primary_gene: z.string().min(1),     // Dynamic: accepts any gene symbol
   phenotype: PhenotypeEnum,
   diplotype: z.string(),
   confidence_score: z.number().min(0).max(1),
   severity: SeverityEnum,
   risk_label: RiskLabelEnum,
+  // Optional CPIC context for LLM grounding
+  cpic_context: z.object({
+    raw_recommendation: z.string(),
+    classification: z.string(),
+    implications: z.string(),
+  }).optional(),
 }).refine(
   (data) => data.drug === data.drug.toUpperCase(),
   { message: "Drug must be uppercase" }
@@ -49,7 +40,7 @@ export const AnalyzeRequestSchema = z.object({
 // Block genomic data fields from reaching the backend
 export const BLOCKED_FIELDS = ["variants", "rsid", "vcf", "star_allele", "chromosome", "position"];
 
-// ---- Detected Variant Schema ----
+// ─── Detected Variant Schema ────────────────────────────────────
 const DetectedVariantSchema = z.object({
   rsid: z.string(),
   gene: z.string(),
@@ -62,7 +53,7 @@ const DetectedVariantSchema = z.object({
   clinical_significance: z.string(),
 });
 
-// ---- LLM Explanation Schema ----
+// ─── LLM Explanation Schema ─────────────────────────────────────
 export const LLMExplanationSchema = z.object({
   summary: z.string(),
   biological_mechanism: z.string(),
@@ -71,7 +62,7 @@ export const LLMExplanationSchema = z.object({
   disclaimer: z.string(),
 });
 
-// ---- Full Analysis Result Schema ----
+// ─── Full Analysis Result Schema ────────────────────────────────
 export const AnalysisResultSchema = z.object({
   patient_id: z.string(),
   drug: z.string(),
@@ -103,6 +94,14 @@ export const AnalysisResultSchema = z.object({
     annotation_completeness: z.number(),
     parse_warnings: z.array(z.string()),
   }),
+  // Optional dynamic data source metadata
+  data_source: z.object({
+    cpic_api: z.boolean(),
+    cpic_classification: z.string(),
+    cpic_implications: z.string(),
+    diplotype_exact_match: z.boolean(),
+    confidence_basis: z.string(),
+  }).optional(),
 });
 
 export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;

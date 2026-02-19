@@ -1,28 +1,67 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Dna, FlaskConical, Loader2 } from "lucide-react";
+import { Dna, FlaskConical, Loader2, Radio, Wifi, WifiOff } from "lucide-react";
 import Dropzone from "@/components/Dropzone";
 import DrugSelector from "@/components/DrugSelector";
 import RiskDashboard from "@/components/RiskDashboard";
+import DrugHistoryTracker from "@/components/DrugHistoryTracker";
+import ZeroLayerSentry from "@/components/ZeroLayerSentry";
 import { parseVCF, ParsedVCF } from "@/lib/vcf-parser";
 import { resolveDiplotype } from "@/lib/diplotype-lookup";
 import { assessRisk } from "@/lib/risk-engine";
-import { Drug, DRUG_GENE_MAP, AnalysisResult } from "@/lib/types";
+import { AnalysisResult } from "@/lib/types";
+import { getDrugList, DrugInfo, getGeneForDrug } from "@/lib/drug-registry";
+import { explainConfidence } from "@/lib/confidence-calculator";
 
 export default function Home() {
   const [parsedVCF, setParsedVCF] = useState<ParsedVCF | null>(null);
-  const [selectedDrugs, setSelectedDrugs] = useState<Drug[]>([]);
+  const [selectedDrugs, setSelectedDrugs] = useState<string[]>([]);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [detectedGenes, setDetectedGenes] = useState<string[]>([]);
+
+  // ─── Dynamic drug list from CPIC API ─────────────────────────
+  const [drugList, setDrugList] = useState<DrugInfo[]>([]);
+  const [isLoadingDrugs, setIsLoadingDrugs] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Track online/offline status for PWA badge
+  useEffect(() => {
+    setIsOffline(!navigator.onLine);
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const drugs = await getDrugList();
+        if (!cancelled) {
+          setDrugList(drugs);
+        }
+      } catch (err) {
+        console.error("[PharmaGuard] Failed to load drug list:", err);
+      } finally {
+        if (!cancelled) setIsLoadingDrugs(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleFileLoaded = useCallback(
     (_content: string, _fileName: string, parsed: ParsedVCF) => {
       setParsedVCF(parsed);
       setResults([]);
-      const genes = [...new Set(parsed.variants.map((v) => v.gene))];
+      const genes = Array.from(new Set(parsed.variants.map((v) => v.gene)));
       setDetectedGenes(genes);
       setSelectedDrugs([]);
     },
@@ -37,16 +76,34 @@ export default function Home() {
 
     try {
       const analysisResults: AnalysisResult[] = await Promise.all(
-        selectedDrugs.map(async (drug) => {
-          const primaryGene = DRUG_GENE_MAP[drug];
+        selectedDrugs.map(async (drugName) => {
+          // Find drug info from dynamic list
+          const drugInfo = drugList.find((d) => d.nameUpper === drugName);
+          const primaryGene = drugInfo?.gene || getGeneForDrug(drugName) || "Unknown";
 
-          // Client-side: resolve diplotype and assess risk
-          const diplotypeResult = resolveDiplotype(primaryGene, parsedVCF.variants);
-          const risk = assessRisk(drug, diplotypeResult.phenotype);
+          // Async: resolve diplotype from CPIC API
+          const diplotypeResult = await resolveDiplotype(primaryGene, parsedVCF.variants);
+          // Async: assess risk from CPIC recommendations
+          const risk = await assessRisk(
+            drugName,
+            diplotypeResult.phenotype,
+            primaryGene,
+            parsedVCF.variants.filter((v) => v.gene === primaryGene).length,
+            diplotypeResult.exactMatch
+          );
+
           const geneVariants = parsedVCF.variants.filter((v) => v.gene === primaryGene);
           const patientId = `PATIENT_${uuidv4().substring(0, 8).toUpperCase()}`;
 
-          // Call backend for LLM explanation (phenotype only — no genomic data)
+          // Build confidence explanation for audit trail
+          const confidenceBasis = explainConfidence({
+            cpicClassification: risk.cpic_classification || "Strong",
+            variantCount: geneVariants.length,
+            diplotypeExactMatch: diplotypeResult.exactMatch,
+            starAlleleResolved: !diplotypeResult.resolvedFromRsid,
+          });
+
+          // Call backend for LLM explanation with CPIC context injection
           let explanation;
           try {
             const response = await fetch("/api/analyze", {
@@ -54,13 +111,18 @@ export default function Home() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 patient_id: patientId,
-                drug,
+                drug: drugName,
                 primary_gene: primaryGene,
                 phenotype: diplotypeResult.phenotype,
                 diplotype: diplotypeResult.diplotype,
                 confidence_score: risk.confidence_score,
                 severity: risk.severity,
                 risk_label: risk.risk_label,
+                cpic_context: {
+                  raw_recommendation: risk.cpic_raw_recommendation || "",
+                  classification: risk.cpic_classification || "",
+                  implications: risk.cpic_implications || "",
+                },
               }),
             });
 
@@ -86,18 +148,18 @@ export default function Home() {
               phenotypeNames[diplotypeResult.phenotype] || "Unknown Metabolizer Status";
 
             explanation = {
-              summary: `Patient has ${diplotypeResult.phenotype} (${phenotypeFull}) phenotype for ${primaryGene}, affecting ${drug} metabolism. Risk assessment: ${risk.risk_label}.`,
-              biological_mechanism: `${primaryGene} encodes a key enzyme responsible for metabolizing ${drug}. The detected diplotype ${diplotypeResult.diplotype} results in ${phenotypeFull} enzyme activity.`,
-              variant_impact: `The diplotype ${diplotypeResult.diplotype} in ${primaryGene} produces ${phenotypeFull} enzyme function, affecting how the body processes ${drug}.`,
-              clinical_context: `This pharmacogenomic profile has direct implications for ${drug} dosing. CPIC guidelines recommend: ${risk.risk_label}.`,
+              summary: `Patient has ${diplotypeResult.phenotype} (${phenotypeFull}) phenotype for ${primaryGene}, affecting ${drugName} metabolism. Risk assessment: ${risk.risk_label}.`,
+              biological_mechanism: `${primaryGene} encodes a key enzyme responsible for metabolizing ${drugName}. The detected diplotype ${diplotypeResult.diplotype} results in ${phenotypeFull} enzyme activity.`,
+              variant_impact: `The diplotype ${diplotypeResult.diplotype} in ${primaryGene} produces ${phenotypeFull} enzyme function, affecting how the body processes ${drugName}.`,
+              clinical_context: `CPIC guideline recommendation: ${risk.recommendation}`,
               disclaimer:
-                "This is AI-generated clinical decision support only. All treatment decisions require qualified healthcare provider review.",
+                "This is AI-generated clinical decision support using live CPIC guideline data. All treatment decisions require qualified healthcare provider review.",
             };
           }
 
           return {
             patient_id: patientId,
-            drug,
+            drug: drugName,
             timestamp: new Date().toISOString(),
             risk_assessment: {
               risk_label: risk.risk_label,
@@ -125,17 +187,24 @@ export default function Home() {
               dose_adjustment: risk.dose_adjustment,
               alternative_drugs: risk.alternative_drugs,
               monitoring_required: risk.monitoring_required,
-              cpic_guideline_version: "CPIC v1.9 (2023)",
+              cpic_guideline_version: "CPIC Live API (dynamic)",
               recommendation_strength: risk.cpic_strength,
             },
             llm_generated_explanation: explanation,
             quality_metrics: {
               vcf_parsing_success: parsedVCF.success,
               variants_detected: parsedVCF.variants.length,
-              genes_analyzed: [...new Set(parsedVCF.variants.map((v) => v.gene))],
+              genes_analyzed: Array.from(new Set(parsedVCF.variants.map((v) => v.gene))),
               annotation_completeness:
                 parsedVCF.variants.length > 0 ? 0.95 : 0.6,
               parse_warnings: parsedVCF.warnings,
+            },
+            data_source: {
+              cpic_api: true,
+              cpic_classification: risk.cpic_classification || "N/A",
+              cpic_implications: risk.cpic_implications || "",
+              diplotype_exact_match: diplotypeResult.exactMatch,
+              confidence_basis: confidenceBasis,
             },
           };
         })
@@ -169,9 +238,28 @@ export default function Home() {
             Precision medicine, decoded.
           </p>
           <p className="text-muted/60 text-sm mt-2 max-w-xl mx-auto">
-            Upload a VCF file to predict drug reaction risks using CPIC-aligned
-            pharmacogenomic analysis across 6 genes and 6 drugs.
+            Upload a VCF file to predict drug reaction risks using{" "}
+            <span className="text-teal-400/80 font-medium">live CPIC guideline data</span>{" "}
+            with evidence-based pharmacogenomic analysis.
           </p>
+          {/* Live Data Indicator */}
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-400/10 border border-teal-400/20 text-xs font-mono text-teal-400">
+              <Radio className="w-3 h-3 animate-pulse" />
+              Live CPIC Data
+            </span>
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-base-700/50 border border-offwhite/10 text-xs font-mono text-muted">
+              {drugList.length > 0 ? `${drugList.length} drugs` : "Loading..."}
+            </span>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-mono ${
+              isOffline
+                ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                : "bg-jade-500/10 border-jade-500/20 text-jade-500"
+            }`}>
+              {isOffline ? <WifiOff className="w-3 h-3" /> : <Wifi className="w-3 h-3" />}
+              {isOffline ? "Offline Mode" : "Connected"}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -186,6 +274,8 @@ export default function Home() {
             selectedDrugs={selectedDrugs}
             onSelectionChange={setSelectedDrugs}
             detectedGenes={detectedGenes}
+            drugList={drugList}
+            isLoadingDrugs={isLoadingDrugs}
           />
         )}
 
@@ -222,8 +312,14 @@ export default function Home() {
           </div>
         )}
 
+        {/* Zero Layer Sentry — pre-emptive safety alerts */}
+        {results.length > 0 && <ZeroLayerSentry results={results} />}
+
         {/* Results Dashboard */}
         {results.length > 0 && <RiskDashboard results={results} />}
+
+        {/* Drug History Tracker — longitudinal record */}
+        <DrugHistoryTracker results={results} />
       </div>
 
       {/* Footer */}
@@ -233,7 +329,7 @@ export default function Home() {
           Pharmacogenomics / Explainable AI Track
         </p>
         <p className="text-muted/50 text-xs mt-1">
-          For educational purposes only. Not for clinical diagnosis.
+          Powered by live CPIC clinical guidelines. For educational purposes only — not a validated clinical diagnostic tool.
         </p>
       </footer>
     </main>

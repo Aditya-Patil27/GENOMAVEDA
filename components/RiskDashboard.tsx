@@ -15,9 +15,14 @@ import {
   Brain,
   Activity,
   AlertTriangle,
+  Eye,
+  Microscope,
 } from "lucide-react";
 import ConfidenceGauge from "./ConfidenceGauge";
 import JsonExporter from "./JsonExporter";
+import FhirExporter from "./FhirExporter";
+import PdfReport from "./PdfReport";
+import GlassBoxPanel from "./GlassBoxPanel";
 
 interface RiskDashboardProps {
   results: AnalysisResult[];
@@ -109,6 +114,7 @@ function AccordionSection({
 function DrugCard({ result, index }: { result: AnalysisResult; index: number }) {
   const risk = riskConfig[result.risk_assessment.risk_label] || riskConfig.Unknown;
   const RiskIcon = risk.icon;
+  const [viewMode, setViewMode] = useState<"patient" | "clinician">("patient");
 
   return (
     <div
@@ -129,6 +135,32 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
             {risk.label}
           </span>
         </div>
+      </div>
+
+      {/* ─── Patient / Clinician View Toggle ─── */}
+      <div className="flex items-center gap-1 mb-5 p-1 bg-base-800/80 rounded-lg w-fit">
+        <button
+          onClick={() => setViewMode("patient")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
+            viewMode === "patient"
+              ? "bg-teal-400/15 text-teal-400 shadow-sm"
+              : "text-muted hover:text-offwhite/70"
+          }`}
+        >
+          <Eye className="w-3 h-3" />
+          Patient View
+        </button>
+        <button
+          onClick={() => setViewMode("clinician")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
+            viewMode === "clinician"
+              ? "bg-amber-500/15 text-amber-400 shadow-sm"
+              : "text-muted hover:text-offwhite/70"
+          }`}
+        >
+          <Microscope className="w-3 h-3" />
+          Clinician View
+        </button>
       </div>
 
       {/* Severity + Confidence row */}
@@ -160,7 +192,7 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
         </div>
       </div>
 
-      {/* Expandable sections */}
+      {/* Expandable sections — always visible */}
       <AccordionSection title="Clinical Recommendation" icon={Pill} defaultOpen={true}>
         <div className="space-y-2 text-sm">
           <p className="text-offwhite/90">{result.clinical_recommendation.primary_recommendation}</p>
@@ -279,9 +311,14 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
         </div>
       </AccordionSection>
 
-      {/* Export */}
-      <div className="mt-4 pt-3 border-t border-offwhite/5">
+      {/* ─── Glass Box Panel (Clinician View Only) ─── */}
+      {viewMode === "clinician" && <GlassBoxPanel result={result} />}
+
+      {/* Export row: JSON + FHIR + PDF */}
+      <div className="mt-4 pt-3 border-t border-offwhite/5 flex items-center gap-2 flex-wrap">
         <JsonExporter result={result} />
+        <FhirExporter result={result} />
+        <PdfReport result={result} />
       </div>
     </div>
   );

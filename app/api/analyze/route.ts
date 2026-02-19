@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     const input = parseResult.data;
 
-    // Generate LLM explanation (with fallback)
+    // Generate LLM explanation (with CPIC context injection)
     let explanation;
     try {
       explanation = await generateExplanation({
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
         phenotype: input.phenotype,
         diplotype: input.diplotype,
         risk_label: input.risk_label,
+        cpic_context: input.cpic_context,
       });
     } catch (error) {
       console.error("[API] LLM call failed, using fallback:", error);
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
         phenotype: input.phenotype,
         diplotype: input.diplotype,
         risk_label: input.risk_label,
+        cpic_context: input.cpic_context,
       });
     }
 
@@ -90,11 +92,12 @@ export async function POST(request: NextRequest) {
         detected_variants: [],
       },
       clinical_recommendation: {
-        primary_recommendation: `CPIC guideline-based recommendation for ${input.drug} with ${input.phenotype} metabolizer status.`,
+        primary_recommendation: input.cpic_context?.raw_recommendation ||
+          `CPIC guideline-based recommendation for ${input.drug} with ${input.phenotype} metabolizer status.`,
         dose_adjustment: input.risk_label === "Safe" ? "None required" : "Consult CPIC guidelines",
         alternative_drugs: [],
         monitoring_required: input.severity !== "none",
-        cpic_guideline_version: "CPIC v1.9 (2023)",
+        cpic_guideline_version: "CPIC Live API (dynamic)",
         recommendation_strength: "strong" as const,
       },
       llm_generated_explanation: explanation,

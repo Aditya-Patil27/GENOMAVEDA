@@ -11,11 +11,24 @@ const phenotypeNames: Record<string, string> = {
 };
 
 function buildPrompt(input: ExplainerInput): string {
+  // Build the CPIC guideline context block if available
+  let guidelineContext = "";
+  if (input.cpic_context && input.cpic_context.raw_recommendation) {
+    guidelineContext = `
+CURRENT CPIC GUIDELINE CONTEXT (live data, not from training):
+- Classification: ${input.cpic_context.classification}
+- Recommendation: ${input.cpic_context.raw_recommendation}
+- Implications: ${input.cpic_context.implications}
+
+IMPORTANT: Base your explanation on the EXACT guideline data above, not your training data.
+`;
+  }
+
   return `Pharmacogenomics analysis for CPIC-aligned clinical system.
 Drug: ${input.drug} | Gene: ${input.gene}
 Phenotype: ${input.phenotype} (${phenotypeNames[input.phenotype] ?? "Unknown"})
 Diplotype: ${input.diplotype} | Risk: ${input.risk_label}
-
+${guidelineContext}
 Return JSON with EXACTLY these 5 keys, nothing else:
 {
   "summary": "2-3 sentence patient-friendly explanation",
@@ -34,15 +47,15 @@ async function callGroq(input: ExplainerInput): Promise<string> {
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
+    const systemMessage = input.cpic_context
+      ? "You are a clinical pharmacogenomics AI. You have been provided with LIVE CPIC guideline data — ground your response in that data, not your training knowledge. Return only valid JSON with exactly 5 keys: summary, biological_mechanism, variant_impact, clinical_context, disclaimer."
+      : "You are a clinical pharmacogenomics AI. Return only valid JSON with exactly 5 keys: summary, biological_mechanism, variant_impact, clinical_context, disclaimer.";
+
     const response = await client.chat.completions.create(
       {
         model: "llama-3.3-70b-versatile",
         messages: [
-          {
-            role: "system",
-            content:
-              "You are a clinical pharmacogenomics AI. Return only valid JSON with exactly 5 keys: summary, biological_mechanism, variant_impact, clinical_context, disclaimer.",
-          },
+          { role: "system", content: systemMessage },
           { role: "user", content: buildPrompt(input) },
         ],
         temperature: 0.3,

@@ -1,3 +1,10 @@
+/**
+ * Dynamic type definitions for PharmaGuard
+ *
+ * Previously hardcoded to 6 drugs/genes — now dynamic.
+ * Types are flexible strings backed by runtime validation.
+ */
+
 export interface AnalysisResult {
   patient_id: string;
   drug: string;
@@ -45,6 +52,14 @@ export interface AnalysisResult {
     annotation_completeness: number;
     parse_warnings: string[];
   };
+  /** Dynamic data source info (new) */
+  data_source?: {
+    cpic_api: boolean;
+    cpic_classification: string;
+    cpic_implications: string;
+    diplotype_exact_match: boolean;
+    confidence_basis: string;
+  };
 }
 
 export interface LLMExplanation {
@@ -61,13 +76,25 @@ export interface ExplainerInput {
   phenotype: string;
   diplotype: string;
   risk_label: string;
+  /** Live CPIC guideline context for LLM grounding (new) */
+  cpic_context?: {
+    raw_recommendation: string;
+    classification: string;
+    implications: string;
+  };
 }
 
-export type Drug = "CODEINE" | "WARFARIN" | "CLOPIDOGREL" | "SIMVASTATIN" | "AZATHIOPRINE" | "FLUOROURACIL";
+// ─── Legacy Compatibility ───────────────────────────────────────
+// These are kept for backward compatibility but are now dynamically extended.
 
-export type Gene = "CYP2D6" | "CYP2C19" | "CYP2C9" | "SLCO1B1" | "TPMT" | "DPYD";
+/** @deprecated Use DrugInfo from drug-registry.ts instead */
+export type Drug = string;
 
-export const DRUG_GENE_MAP: Record<Drug, Gene> = {
+/** @deprecated Use dynamic gene mapping from drug-registry.ts instead */
+export type Gene = string;
+
+/** @deprecated Use getDrugList() from drug-registry.ts instead */
+export const DRUG_GENE_MAP: Record<string, string> = {
   CODEINE: "CYP2D6",
   CLOPIDOGREL: "CYP2C19",
   WARFARIN: "CYP2C9",
@@ -76,7 +103,8 @@ export const DRUG_GENE_MAP: Record<Drug, Gene> = {
   FLUOROURACIL: "DPYD",
 };
 
-export const ALL_DRUGS: Drug[] = [
+/** @deprecated Use getDrugList() from drug-registry.ts instead */
+export const ALL_DRUGS: string[] = [
   "CODEINE",
   "WARFARIN",
   "CLOPIDOGREL",
