@@ -15,11 +15,11 @@ export default function UploadPage() {
   const handleFileLoaded = useCallback(
     (_content: string, _fileName: string, parsed: ParsedVCF) => {
       const genes = Array.from(new Set(parsed.variants.map((v) => v.gene)));
-      
+
       // Store in context
       setParsedVCFData(parsed);
       setDetectedGenes(genes);
-      
+
       // Navigate to drug selection
       router.push("/select-drug");
     },
@@ -27,7 +27,7 @@ export default function UploadPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm">
       {/* Header */}
       <header className="border-b border-slate-700 bg-slate-800/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
