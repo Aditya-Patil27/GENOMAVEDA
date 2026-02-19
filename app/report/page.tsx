@@ -37,15 +37,11 @@ export default function ReportPage() {
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
             <div className="flex items-center gap-3">
-              <Image
-                src="/assets/image/logo.png"
-                alt="GenomaVeda Logo"
-                width={32}
-                height={32}
-                className="object-contain"
-              />
+              <div className="w-8 h-8 rounded bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-teal-500" />
+              </div>
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
+                <h1 className="text-lg font-semibold text-slate-100">PharmaGuard</h1>
                 <p className="text-xs text-slate-400">v2.4.0</p>
               </div>
             </div>
@@ -117,7 +113,7 @@ export default function ReportPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center gap-4">
-              <span>GenomaVeda v2.4.0</span>
+              <span>PharmaGuard v2.4.0</span>
               <span>•</span>
               <span>RIFT 2026 Hackathon</span>
               <span>•</span>

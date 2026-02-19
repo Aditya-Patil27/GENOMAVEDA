@@ -50,7 +50,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         {/* React Bits Plasma background */}
-        <PlasmaBackground speed={0.6} opacity={0.8} />
+        <PlasmaBackground color="#ffffff" speed={0.6} opacity={0.8} />
 
         <PharmaGuardProvider>
           <div className="relative z-10">{children}</div>
