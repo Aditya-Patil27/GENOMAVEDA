@@ -22,8 +22,8 @@ export default function ResearcherPage() {
               <Image
                 src="/assets/image/logo.png"
                 alt="GenomaVeda Logo"
-                width={32}
-                height={32}
+                width={48}
+                height={48}
                 className="object-contain"
               />
               <div>
