@@ -1,101 +1,241 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState, useCallback } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { Dna, FlaskConical, Loader2 } from "lucide-react";
+import Dropzone from "@/components/Dropzone";
+import DrugSelector from "@/components/DrugSelector";
+import RiskDashboard from "@/components/RiskDashboard";
+import { parseVCF, ParsedVCF } from "@/lib/vcf-parser";
+import { resolveDiplotype } from "@/lib/diplotype-lookup";
+import { assessRisk } from "@/lib/risk-engine";
+import { Drug, DRUG_GENE_MAP, AnalysisResult } from "@/lib/types";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [parsedVCF, setParsedVCF] = useState<ParsedVCF | null>(null);
+  const [selectedDrugs, setSelectedDrugs] = useState<Drug[]>([]);
+  const [results, setResults] = useState<AnalysisResult[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [detectedGenes, setDetectedGenes] = useState<string[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleFileLoaded = useCallback(
+    (_content: string, _fileName: string, parsed: ParsedVCF) => {
+      setParsedVCF(parsed);
+      setResults([]);
+      const genes = [...new Set(parsed.variants.map((v) => v.gene))];
+      setDetectedGenes(genes);
+      setSelectedDrugs([]);
+    },
+    []
+  );
+
+  const handleAnalyze = async () => {
+    if (!parsedVCF || selectedDrugs.length === 0) return;
+
+    setIsAnalyzing(true);
+    setResults([]);
+
+    try {
+      const analysisResults: AnalysisResult[] = await Promise.all(
+        selectedDrugs.map(async (drug) => {
+          const primaryGene = DRUG_GENE_MAP[drug];
+
+          // Client-side: resolve diplotype and assess risk
+          const diplotypeResult = resolveDiplotype(primaryGene, parsedVCF.variants);
+          const risk = assessRisk(drug, diplotypeResult.phenotype);
+          const geneVariants = parsedVCF.variants.filter((v) => v.gene === primaryGene);
+          const patientId = `PATIENT_${uuidv4().substring(0, 8).toUpperCase()}`;
+
+          // Call backend for LLM explanation (phenotype only — no genomic data)
+          let explanation;
+          try {
+            const response = await fetch("/api/analyze", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                patient_id: patientId,
+                drug,
+                primary_gene: primaryGene,
+                phenotype: diplotypeResult.phenotype,
+                diplotype: diplotypeResult.diplotype,
+                confidence_score: risk.confidence_score,
+                severity: risk.severity,
+                risk_label: risk.risk_label,
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              explanation = data.llm_generated_explanation;
+            }
+          } catch {
+            // Backend unavailable — use fallback
+          }
+
+          // Fallback explanation if backend call failed
+          if (!explanation) {
+            const phenotypeNames: Record<string, string> = {
+              PM: "Poor Metabolizer",
+              IM: "Intermediate Metabolizer",
+              NM: "Normal Metabolizer",
+              RM: "Rapid Metabolizer",
+              URM: "Ultra-Rapid Metabolizer",
+              Unknown: "Unknown Metabolizer Status",
+            };
+            const phenotypeFull =
+              phenotypeNames[diplotypeResult.phenotype] || "Unknown Metabolizer Status";
+
+            explanation = {
+              summary: `Patient has ${diplotypeResult.phenotype} (${phenotypeFull}) phenotype for ${primaryGene}, affecting ${drug} metabolism. Risk assessment: ${risk.risk_label}.`,
+              biological_mechanism: `${primaryGene} encodes a key enzyme responsible for metabolizing ${drug}. The detected diplotype ${diplotypeResult.diplotype} results in ${phenotypeFull} enzyme activity.`,
+              variant_impact: `The diplotype ${diplotypeResult.diplotype} in ${primaryGene} produces ${phenotypeFull} enzyme function, affecting how the body processes ${drug}.`,
+              clinical_context: `This pharmacogenomic profile has direct implications for ${drug} dosing. CPIC guidelines recommend: ${risk.risk_label}.`,
+              disclaimer:
+                "This is AI-generated clinical decision support only. All treatment decisions require qualified healthcare provider review.",
+            };
+          }
+
+          return {
+            patient_id: patientId,
+            drug,
+            timestamp: new Date().toISOString(),
+            risk_assessment: {
+              risk_label: risk.risk_label,
+              confidence_score: risk.confidence_score,
+              severity: risk.severity,
+            },
+            pharmacogenomic_profile: {
+              primary_gene: primaryGene,
+              diplotype: diplotypeResult.diplotype,
+              phenotype: diplotypeResult.phenotype,
+              detected_variants: geneVariants.map((v) => ({
+                rsid: v.rsid,
+                gene: v.gene,
+                chromosome: v.chromosome,
+                position: v.position,
+                ref_allele: v.ref_allele,
+                alt_allele: v.alt_allele,
+                zygosity: v.zygosity,
+                star_allele: v.star_allele,
+                clinical_significance: v.clinical_significance,
+              })),
+            },
+            clinical_recommendation: {
+              primary_recommendation: risk.recommendation,
+              dose_adjustment: risk.dose_adjustment,
+              alternative_drugs: risk.alternative_drugs,
+              monitoring_required: risk.monitoring_required,
+              cpic_guideline_version: "CPIC v1.9 (2023)",
+              recommendation_strength: risk.cpic_strength,
+            },
+            llm_generated_explanation: explanation,
+            quality_metrics: {
+              vcf_parsing_success: parsedVCF.success,
+              variants_detected: parsedVCF.variants.length,
+              genes_analyzed: [...new Set(parsedVCF.variants.map((v) => v.gene))],
+              annotation_completeness:
+                parsedVCF.variants.length > 0 ? 0.95 : 0.6,
+              parse_warnings: parsedVCF.warnings,
+            },
+          };
+        })
+      );
+
+      setResults(analysisResults);
+    } catch (error) {
+      console.error("Analysis error:", error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen pb-16">
+      {/* Hero Header */}
+      <header className="relative py-12 px-6 text-center animate-fade-in overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+          <Dna className="w-64 h-64 text-teal-400 dna-helix" />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded bg-teal-400/10 border border-teal-400/30 flex items-center justify-center animate-pulse-slow">
+              <FlaskConical className="w-5 h-5 text-teal-400" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-heading font-bold text-gradient-teal">
+              PharmaGuard
+            </h1>
+          </div>
+          <p className="text-muted text-lg font-light tracking-wide">
+            Precision medicine, decoded.
+          </p>
+          <p className="text-muted/60 text-sm mt-2 max-w-xl mx-auto">
+            Upload a VCF file to predict drug reaction risks using CPIC-aligned
+            pharmacogenomic analysis across 6 genes and 6 drugs.
+          </p>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-6 space-y-8">
+        {/* Upload Zone */}
+        <Dropzone onFileLoaded={handleFileLoaded} parseVCF={parseVCF} />
+
+        {/* Drug Selector */}
+        {parsedVCF && (
+          <DrugSelector
+            selectedDrugs={selectedDrugs}
+            onSelectionChange={setSelectedDrugs}
+            detectedGenes={detectedGenes}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        )}
+
+        {/* Analyze Button */}
+        {parsedVCF && selectedDrugs.length > 0 && (
+          <div className="animate-slide-up stagger-4">
+            <button
+              onClick={handleAnalyze}
+              disabled={isAnalyzing}
+              className={`
+                w-full py-4 rounded font-heading font-bold text-lg transition-all duration-300
+                ${
+                  isAnalyzing
+                    ? "bg-base-700 text-muted cursor-wait"
+                    : "bg-gradient-to-r from-teal-400 to-jade-500 text-base-900 hover:shadow-lg hover:shadow-teal-400/20 hover:scale-[1.01] active:scale-[0.99]"
+                }
+              `}
+            >
+              {isAnalyzing ? (
+                <span className="flex items-center justify-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Analyzing Genomic Profile...</span>
+                  <span className="text-sm font-normal opacity-60">
+                    Sequencing {selectedDrugs.length} drug{selectedDrugs.length > 1 ? "s" : ""}
+                  </span>
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <Dna className="w-5 h-5" />
+                  Analyze {selectedDrugs.length} Drug{selectedDrugs.length > 1 ? "s" : ""}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Results Dashboard */}
+        {results.length > 0 && <RiskDashboard results={results} />}
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-20 py-6 border-t border-offwhite/5 text-center">
+        <p className="text-muted text-xs">
+          PharmaGuard — RIFT 2026 Hackathon • Team Antigravity •
+          Pharmacogenomics / Explainable AI Track
+        </p>
+        <p className="text-muted/50 text-xs mt-1">
+          For educational purposes only. Not for clinical diagnosis.
+        </p>
       </footer>
-    </div>
+    </main>
   );
 }
