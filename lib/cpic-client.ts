@@ -6,6 +6,9 @@
 
 const CPIC_API = process.env.CPIC_API_BASE || "https://api.cpicpgx.org/v1";
 
+import STATIC_DIPLOTYPES from "@/data/cpic-diplotypes.json";
+import STATIC_DRUG_RULES from "@/data/drug-gene-rules.json";
+
 // ─── In-Memory Cache ────────────────────────────────────────────
 interface CacheEntry<T> {
   data: T;
@@ -118,8 +121,23 @@ export async function getDiplotypeMappings(
     setCache(cacheKey, map);
     return map;
   } catch (error) {
-    console.error(`[CPIC] Failed to fetch diplotype mappings for ${gene}:`, error);
-    return new Map(); // empty = fallback to local logic
+    console.warn(`[CPIC] API failed for ${gene}, using static fallback`, error);
+    
+    // Fallback using local JSON
+    const map = new Map<string, { phenotype: string; activityScore: string; consultationText: string }>();
+    const geneData = (STATIC_DIPLOTYPES as any)[gene];
+    
+    if (geneData) {
+      Object.entries(geneData).forEach(([diplotype, data]: [string, any]) => {
+        map.set(diplotype, {
+          phenotype: data.phenotype,
+          activityScore: data.activity_score?.toString() || "0",
+          consultationText: "" // Static data doesn't have consultation text
+        });
+      });
+    }
+    
+    return map;
   }
 }
 
@@ -142,8 +160,78 @@ export async function getDrugRecommendations(
     setCache(cacheKey, data);
     return data;
   } catch (error) {
-    console.error(`[CPIC] Failed to fetch recommendations for ${drugId}:`, error);
-    return [];
+    console.warn(`[CPIC] API failed for drug ${drugId}, using static fallback`, error);
+    
+    // Fallback using local JSON
+    const drugKey = Object.keys(STATIC_DRUG_RULES).find(k => 
+      (STATIC_DRUG_RULES as any)[k].drugId === drugId || 
+      k.toUpperCase() === drugId.toUpperCase() ||
+      // Try matching by checking if the drugId contains the name (e.g. RxNorm lookup)
+      // This is imperfect but good for a demo fallback
+      true
+    );
+
+    // Better fallback: Iterate relevant drugs in STATIC_DRUG_RULES
+    // Since we don't have a direct ID map here, we'll return ALL rules that match the ID if possible, 
+    // or just return empty if we can't map. 
+    // However, for the demo, the user is likely using "CODEINE" etc.
+    
+    // Strategy: Search all drugs in static rules to find one where the ID matches?
+    // STATIC_DRUG_RULES doesn't have IDs at the top level, only keys like "CODEINE".
+    // drug-registry.ts maps "Codeine" -> "RxNorm:2670".
+    
+    // Let's try to find a static drug whose rules we can adapt.
+    // If drugId is "RxNorm:2670", we might not know it's "CODEINE" here easily without a reverse map.
+    
+    // BUT, getDrugRecommendations is called with drugId.
+    // Let's rely on the fact that for the MAIN 6 drugs, we can likely find them.
+    
+    const fallbackRecs: CpicRecommendation[] = [];
+    
+    // Map of common RxNorm IDs to keys in STATIC_DRUG_RULES
+    const ID_MAP: Record<string, string> = {
+      "RxNorm:2670": "CODEINE",
+      "RxNorm:32968": "CLOPIDOGREL",
+      "RxNorm:11289": "WARFARIN",
+      "RxNorm:36567": "SIMVASTATIN",
+      "RxNorm:1256": "AZATHIOPRINE",
+      "RxNorm:4492": "FLUOROURACIL"
+    };
+
+    const key = ID_MAP[drugId];
+    if (key && (STATIC_DRUG_RULES as any)[key]) {
+      const entry = (STATIC_DRUG_RULES as any)[key];
+      const gene = entry.gene;
+      
+      Object.entries(entry.rules).forEach(([phenotype, rule]: [string, any]) => {
+        // Map short phenotype to long name for lookupkey
+        const longPhenotype = 
+          phenotype === "PM" ? "Poor Metabolizer" :
+          phenotype === "IM" ? "Intermediate Metabolizer" :
+          phenotype === "NM" ? "Normal Metabolizer" :
+          phenotype === "RM" ? "Rapid Metabolizer" :
+          phenotype === "URM" ? "Ultrarapid Metabolizer" : "Unknown";
+
+        fallbackRecs.push({
+          id: Math.random(),
+          guidelineid: 0,
+          drugid: drugId,
+          implications: {},
+          drugrecommendation: rule.recommendation,
+          classification: rule.cpic_strength === "strong" ? "Strong" : rule.cpic_strength === "moderate" ? "Moderate" : "Optional",
+          phenotypes: { [gene]: longPhenotype }, 
+          activityscore: {},
+          lookupkey: { [gene]: longPhenotype },
+          population: "General",
+          comments: "Fallback data",
+          dosinginformation: true,
+          alternatedrugavailable: rule.alternatives.length > 0,
+          otherprescribingguidance: false
+        });
+      });
+    }
+
+    return fallbackRecs;
   }
 }
 
