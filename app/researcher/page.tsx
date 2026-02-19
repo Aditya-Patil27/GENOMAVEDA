@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Shield, CheckCircle2, FileText, Beaker, Database, ArrowLeft } from "lucide-react";
 import SyntheticVcfGenerator from "@/components/SyntheticVcfGenerator";
 import CpicEvidenceExplorer from "@/components/CpicEvidenceExplorer";
@@ -18,11 +19,15 @@ export default function ResearcherPage() {
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push("/")}>
-              <div className="w-8 h-8 rounded bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-teal-500" />
-              </div>
+              <Image
+                src="/assets/image/logo.png"
+                alt="GenomaVeda Logo"
+                width={48}
+                height={48}
+                className="object-contain"
+              />
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">PharmaGuard</h1>
+                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
                 <p className="text-xs text-teal-400 font-medium">RESEARCHER SANDBOX</p>
               </div>
             </div>
@@ -114,7 +119,7 @@ export default function ResearcherPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center gap-4">
-              <span>PharmaGuard Research v2.4.0</span>
+              <span>GenomaVeda Research v2.4.0</span>
               <span>•</span>
               <span>RIFT 2026 Hackathon</span>
             </div>

@@ -1,15 +1,81 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import PlasmaBackground from "@/components/PlasmaBackground";
 
-export default function Home() {
+export default function SplashPage() {
   const router = useRouter();
+  const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    router.push("/upload");
+    // Start fade out after 1.5 seconds
+    const fadeTimer = setTimeout(() => {
+      setFadeOut(true);
+    }, 1500);
+
+    // Navigate after fade completes (2 seconds total)
+    const navTimer = setTimeout(() => {
+      router.push("/upload");
+    }, 2000);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(navTimer);
+    };
   }, [router]);
 
-  return null;
+  return (
+    <div 
+      className={`relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 transition-opacity duration-500 ${
+        fadeOut ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      {/* Plasma Animation Background */}
+      <div className="absolute inset-0 z-0">
+        <PlasmaBackground
+          color="#ffffff"
+          speed={0.6}
+          direction="forward"
+          scale={1}
+          opacity={0.8}
+          mouseInteractive={true}
+        />
+      </div>
 
+      {/* Logo and Animated Title Text */}
+      <div className="relative z-10 text-center animate-fade-in-scale">
+        <div className="flex items-center justify-center mb-8">
+          <Image
+            src="/assets/image/logo.png"
+            alt="GenomaVeda Logo"
+            width={120}
+            height={120}
+            className="object-contain"
+          />
+        </div>
+        <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight">
+          GenomaVeda
+        </h1>
+      </div>
+
+      <style jsx>{`
+        @keyframes fadeInScale {
+          0% {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animate-fade-in-scale {
+          animation: fadeInScale 1.2s ease-out forwards;
+        }
+      `}</style>
+    </div>
+  );
 }
