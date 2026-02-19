@@ -1,23 +1,37 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import PlasmaBackground from "@/components/PlasmaBackground";
 
 export default function SplashPage() {
   const router = useRouter();
+  const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // Start fade out after 4.5 seconds
+    const fadeTimer = setTimeout(() => {
+      setFadeOut(true);
+    }, 4500);
+
+    // Navigate after fade completes (5 seconds total)
+    const navTimer = setTimeout(() => {
       router.push("/upload");
     }, 5000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(navTimer);
+    };
   }, [router]);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950">
+    <div 
+      className={`relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 transition-opacity duration-500 ${
+        fadeOut ? "opacity-0" : "opacity-100"
+      }`}
+    >
       {/* Plasma Animation Background */}
       <div className="absolute inset-0 z-0">
         <PlasmaBackground

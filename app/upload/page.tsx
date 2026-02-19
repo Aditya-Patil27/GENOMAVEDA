@@ -27,7 +27,11 @@ export default function UploadPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm">
+    <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm animate-fade-in"
+      style={{
+        animation: "fadeIn 0.5s ease-in forwards"
+      }}
+    >
       {/* Header */}
       <header className="border-b border-slate-700 bg-slate-800/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -117,6 +121,17 @@ export default function UploadPage() {
           </div>
         </div>
       </footer>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }
