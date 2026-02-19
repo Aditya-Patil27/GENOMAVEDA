@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, CheckCircle2, FileText, ArrowLeft } from "lucide-react";
 import RiskDashboard from "@/components/RiskDashboard";
@@ -10,6 +10,8 @@ import { usePharmaGuard } from "@/context/PharmaGuardContext";
 export default function ReportPage() {
   const router = useRouter();
   const { analysisResult } = usePharmaGuard();
+  const [videoComplete, setVideoComplete] = useState(false);
+  const [hasSeenVideo, setHasSeenVideo] = useState(false);
 
   useEffect(() => {
     // Route Guard: Redirect if no results
@@ -17,6 +19,20 @@ export default function ReportPage() {
       router.push("/upload");
     }
   }, [analysisResult, router]);
+
+  useEffect(() => {
+    // Check if user has already seen the video in this session
+    const videoSeen = sessionStorage.getItem("pharmaguard_video_seen");
+    if (videoSeen === "true") {
+      setHasSeenVideo(true);
+      setVideoComplete(true);
+    }
+  }, []);
+
+  const handleVideoEnd = () => {
+    setVideoComplete(true);
+    sessionStorage.setItem("pharmaguard_video_seen", "true");
+  };
 
   if (!analysisResult || analysisResult.length === 0) {
     return null; // Will redirect in useEffect
@@ -82,21 +98,49 @@ export default function ReportPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 pb-16">
-        <div className="clinical-card p-6">
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
-            <div className="flex items-center gap-3">
-              <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
-                3
-              </div>
-              <h3 className="text-lg font-semibold text-slate-100">Risk Assessment Report</h3>
+        {!videoComplete && !hasSeenVideo ? (
+          // Processing Video Animation
+          <div className="clinical-card p-12 flex flex-col items-center justify-center min-h-[500px]">
+            <div className="relative w-full max-w-2xl">
+              <video
+                src="/assets/videos/thinking-animation.mp4"
+                autoPlay
+                muted
+                playsInline
+                onEnded={handleVideoEnd}
+                className="w-full rounded-lg shadow-2xl"
+                style={{
+                  boxShadow: "0 0 60px rgba(20, 184, 166, 0.15)",
+                }}
+              />
+              <div className="absolute inset-0 rounded-lg pointer-events-none"
+                style={{
+                  background: "radial-gradient(circle at center, transparent 40%, rgba(15, 23, 42, 0.4) 100%)",
+                }}
+              />
             </div>
-            <span className="text-xs text-slate-400 font-mono">
-              Report ID: PG-38621
-            </span>
+            <p className="mt-6 text-slate-400 text-sm text-center animate-pulse">
+              Analyzing genomic profile… please wait.
+            </p>
           </div>
+        ) : (
+          // Risk Dashboard Results
+          <div className="clinical-card p-6">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
+                  3
+                </div>
+                <h3 className="text-lg font-semibold text-slate-100">Risk Assessment Report</h3>
+              </div>
+              <span className="text-xs text-slate-400 font-mono">
+                Report ID: PG-38621
+              </span>
+            </div>
 
-          <RiskDashboard results={analysisResult} />
-        </div>
+            <RiskDashboard results={analysisResult} />
+          </div>
+        )}
       </div>
 
       {/* Footer */}
