@@ -47,7 +47,7 @@ export default function JsonExporter({ result }: JsonExporterProps) {
     <div className="flex items-center gap-2">
       <button
         onClick={handleDownload}
-        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-teal-400 bg-teal-400/10 hover:bg-teal-400/20 border border-teal-400/20 rounded transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 rounded transition-colors"
         title="Download JSON"
       >
         <Download className="w-3.5 h-3.5" />
@@ -57,8 +57,8 @@ export default function JsonExporter({ result }: JsonExporterProps) {
         onClick={handleCopy}
         className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border rounded transition-all ${
           copied
-            ? "text-jade-500 bg-jade-500/10 border-jade-500/20"
-            : "text-muted hover:text-offwhite bg-offwhite/5 hover:bg-offwhite/10 border-offwhite/10"
+            ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+            : "text-slate-400 hover:text-slate-300 bg-slate-700/50 hover:bg-slate-700 border-slate-600"
         }`}
         title="Copy to clipboard"
       >

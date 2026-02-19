@@ -12,9 +12,9 @@ export default function ConfidenceGauge({ score }: ConfidenceGaugeProps) {
   const strokeDashoffset = circumference - (score * circumference);
 
   const getColor = (s: number) => {
-    if (s >= 0.85) return { stroke: "#00C896", text: "text-jade-500" };
-    if (s >= 0.7) return { stroke: "#FFB800", text: "text-amber-500" };
-    return { stroke: "#FF2D55", text: "text-crimson-500" };
+    if (s >= 0.85) return { stroke: "#10b981", text: "text-emerald-400" };
+    if (s >= 0.7) return { stroke: "#fbbf24", text: "text-amber-400" };
+    return { stroke: "#ef4444", text: "text-red-400" };
   };
 
   const colors = getColor(score);
@@ -29,7 +29,7 @@ export default function ConfidenceGauge({ score }: ConfidenceGaugeProps) {
             cy="40"
             r="36"
             fill="none"
-            stroke="rgba(139, 149, 168, 0.1)"
+            stroke="rgba(71, 85, 105, 0.3)"
             strokeWidth="4"
           />
           {/* Progress arc */}
@@ -44,9 +44,6 @@ export default function ConfidenceGauge({ score }: ConfidenceGaugeProps) {
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             className="transition-all duration-1000 ease-out"
-            style={{
-              filter: `drop-shadow(0 0 6px ${colors.stroke}40)`,
-            }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
@@ -56,7 +53,7 @@ export default function ConfidenceGauge({ score }: ConfidenceGaugeProps) {
         </div>
       </div>
       <div>
-        <p className="text-xs text-muted uppercase tracking-wider">Confidence</p>
+        <p className="text-xs text-slate-400 uppercase tracking-wider">Confidence</p>
         <p className={`text-sm font-semibold ${colors.text}`}>
           {score >= 0.85 ? "High" : score >= 0.7 ? "Moderate" : "Low"}
         </p>
