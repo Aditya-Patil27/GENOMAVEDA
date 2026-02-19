@@ -4,9 +4,9 @@
 
 Place your processing animation video here:
 
-**Filename:** `thinking-animation.mp4`
+**Filename:** `thinking.mp4`
 
-**Location:** `public/assets/videos/thinking-animation.mp4`
+**Location:** `public/assets/videos/thinking.mp4`
 
 **Requirements:**
 - Format: MP4
@@ -15,9 +15,11 @@ Place your processing animation video here:
 - Suggested content: Loading animation, thinking animation, or processing visualization
 
 **Usage:**
-This video plays on the `/report` page while the genomic analysis results are being displayed for the first time. After the video ends, the RiskDashboard component is shown.
+This video plays as a cinematic overlay on the `/report` page when the user first lands on it. The overlay covers the content below the progress indicator with a blurred black background. After the video ends, the overlay fades out smoothly to reveal the RiskDashboard.
 
 **Behavior:**
 - Plays once on first visit to `/report`
 - Skipped on subsequent visits or page refreshes (tracked via sessionStorage)
 - Auto-plays, muted, no loop
+- Smooth 700ms fade-out transition after video ends
+- Does not break scroll or shift layout

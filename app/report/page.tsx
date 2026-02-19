@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { Shield, CheckCircle2, FileText, ArrowLeft } from "lucide-react";
 import RiskDashboard from "@/components/RiskDashboard";
 import ProgressIndicator from "@/components/ProgressIndicator";
+import ProcessingOverlay from "@/components/ProcessingOverlay";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 
 export default function ReportPage() {
   const router = useRouter();
   const { analysisResult } = usePharmaGuard();
-  const [videoComplete, setVideoComplete] = useState(false);
-  const [hasSeenVideo, setHasSeenVideo] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
 
   useEffect(() => {
     // Route Guard: Redirect if no results
@@ -24,13 +24,12 @@ export default function ReportPage() {
     // Check if user has already seen the video in this session
     const videoSeen = sessionStorage.getItem("pharmaguard_video_seen");
     if (videoSeen === "true") {
-      setHasSeenVideo(true);
-      setVideoComplete(true);
+      setShowOverlay(false);
     }
   }, []);
 
-  const handleVideoEnd = () => {
-    setVideoComplete(true);
+  const handleOverlayComplete = () => {
+    setShowOverlay(false);
     sessionStorage.setItem("pharmaguard_video_seen", "true");
   };
 
@@ -97,50 +96,24 @@ export default function ReportPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 pb-16">
-        {!videoComplete && !hasSeenVideo ? (
-          // Processing Video Animation
-          <div className="clinical-card p-12 flex flex-col items-center justify-center min-h-[500px]">
-            <div className="relative w-full max-w-2xl">
-              <video
-                src="/assets/videos/thinking-animation.mp4"
-                autoPlay
-                muted
-                playsInline
-                onEnded={handleVideoEnd}
-                className="w-full rounded-lg shadow-2xl"
-                style={{
-                  boxShadow: "0 0 60px rgba(20, 184, 166, 0.15)",
-                }}
-              />
-              <div className="absolute inset-0 rounded-lg pointer-events-none"
-                style={{
-                  background: "radial-gradient(circle at center, transparent 40%, rgba(15, 23, 42, 0.4) 100%)",
-                }}
-              />
-            </div>
-            <p className="mt-6 text-slate-400 text-sm text-center animate-pulse">
-              Analyzing genomic profile… please wait.
-            </p>
-          </div>
-        ) : (
-          // Risk Dashboard Results
-          <div className="clinical-card p-6">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
-              <div className="flex items-center gap-3">
-                <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
-                  3
-                </div>
-                <h3 className="text-lg font-semibold text-slate-100">Risk Assessment Report</h3>
+      <div className="max-w-7xl mx-auto px-6 pb-16 relative">
+        {showOverlay && <ProcessingOverlay onComplete={handleOverlayComplete} />}
+        
+        <div className="clinical-card p-6">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
+                3
               </div>
-              <span className="text-xs text-slate-400 font-mono">
-                Report ID: PG-38621
-              </span>
+              <h3 className="text-lg font-semibold text-slate-100">Risk Assessment Report</h3>
             </div>
-
-            <RiskDashboard results={analysisResult} />
+            <span className="text-xs text-slate-400 font-mono">
+              Report ID: PG-38621
+            </span>
           </div>
-        )}
+
+          <RiskDashboard results={analysisResult} />
+        </div>
       </div>
 
       {/* Footer */}
