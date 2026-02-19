@@ -2,8 +2,9 @@
 
 import React, { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { Shield, CheckCircle2, FileText, Beaker } from "lucide-react";
 import Dropzone from "@/components/Dropzone";
+import ProgressIndicator from "@/components/ProgressIndicator";
 import { parseVCF, ParsedVCF } from "@/lib/vcf-parser";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 
@@ -26,63 +27,96 @@ export default function UploadPage() {
   );
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-slate-950 px-6">
-      {/* Logo and Title - Exact same style as splash page */}
-      <div className="relative z-10 text-center mb-16 animate-fade-in">
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <Image
-            src="/assets/image/logo.png"
-            alt="GenomaVeda Logo"
-            width={80}
-            height={80}
-            className="object-contain"
-          />
+    <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm">
+      {/* Header */}
+      <header className="border-b border-slate-700 bg-slate-800/50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Left: Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-teal-500" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-100">PharmaGuard</h1>
+                <p className="text-xs text-slate-400">v2.4.0</p>
+              </div>
+            </div>
+
+            {/* Right: Badges */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push("/researcher")}
+                className="clinical-badge bg-teal-500/10 border border-teal-500/30 text-teal-400 hover:bg-teal-500/20 transition-colors cursor-pointer"
+              >
+                <Beaker className="w-3 h-3 mr-1.5" />
+                RESEARCHER SANDBOX
+              </button>
+              <span className="clinical-badge bg-slate-800 border border-slate-700 text-slate-300">
+                <CheckCircle2 className="w-3 h-3 mr-1.5" />
+                CPIC-ALIGNED
+              </span>
+              <span className="clinical-badge bg-slate-800 border border-slate-700 text-slate-300">
+                <Shield className="w-3 h-3 mr-1.5" />
+                PRIVACY PRESERVING
+              </span>
+              <span className="clinical-badge bg-slate-800 border border-slate-700 text-slate-300">
+                <FileText className="w-3 h-3 mr-1.5" />
+                PROCESSED LOCALLY
+              </span>
+            </div>
+          </div>
         </div>
-        <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight mb-3">
-          GenomaVeda
-        </h1>
-        <p className="text-slate-400 text-base">
-          Precision medicine, decoded
+      </header>
+
+      {/* Progress Indicator */}
+      <ProgressIndicator />
+
+      {/* Main Title */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <h2 className="text-2xl font-semibold text-slate-100 mb-2">
+          Pharmacogenomic Risk Assessment Platform
+        </h2>
+        <p className="text-sm text-slate-400">
+          Precision medicine, decoded. Upload multi-gene VCF sequences to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.
         </p>
       </div>
 
-      {/* Dropzone */}
-      <div className="relative z-10 w-full max-w-2xl animate-fade-in-delay">
-        <Dropzone onFileLoaded={handleFileLoaded} parseVCF={parseVCF} />
+      {/* Content */}
+      <div className="max-w-3xl mx-auto px-6 pb-16">
+        <div className="clinical-card p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
+              1
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-100">Upload VCF File</h3>
+              <p className="text-xs text-slate-400">
+                Standard Variant Call Format (.vcf) file containing patient genotype data.
+              </p>
+            </div>
+          </div>
+          <Dropzone onFileLoaded={handleFileLoaded} parseVCF={parseVCF} />
+        </div>
       </div>
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          0% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeInDelay {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.8s ease-out forwards;
-        }
-
-        .animate-fade-in-delay {
-          animation: fadeInDelay 0.8s ease-out 0.2s forwards;
-          opacity: 0;
-        }
-      `}</style>
+      {/* Footer */}
+      <footer className="border-t border-slate-800 py-6 mt-16">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center gap-4">
+              <span>PharmaGuard v2.4.0</span>
+              <span>•</span>
+              <span>RIFT 2026 Hackathon</span>
+              <span>•</span>
+              <span>Team Antigravity</span>
+              <span>•</span>
+              <span>Pharmacogenomics / Explainable AI Track</span>
+            </div>
+            <span className="text-slate-600">FOR EDUCATIONAL PURPOSES ONLY. NOT FOR CLINICAL DIAGNOSIS.</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
