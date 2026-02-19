@@ -37,9 +37,13 @@ export default function ReportPage() {
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-teal-500" />
-              </div>
+              <Image
+                src="/assets/image/logo.png"
+                alt="GenomaVeda Logo"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
               <div>
                 <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
                 <p className="text-xs text-slate-400">v2.4.0</p>
