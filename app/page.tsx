@@ -50,8 +50,8 @@ export default function SplashPage() {
           <Image
             src="/assets/image/logo.png"
             alt="GenomaVeda Logo"
-            width={160}
-            height={160}
+            width={240}
+            height={240}
             className="object-contain"
           />
         </div>
