@@ -50,7 +50,7 @@ export default function ProcessingOverlay({ onComplete }: ProcessingOverlayProps
 
   return (
     <div
-      className={`absolute inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 transition-opacity duration-700 ease-in-out ${
+      className={`absolute inset-0 bg-black/70 backdrop-blur-md flex items-start justify-center pt-16 z-50 transition-opacity duration-700 ease-in-out ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
     >
