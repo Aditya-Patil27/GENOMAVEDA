@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import PlasmaBackground from "@/components/PlasmaBackground";
 
 export default function SplashPage() {
@@ -29,8 +30,17 @@ export default function SplashPage() {
         />
       </div>
 
-      {/* Animated Title Text */}
+      {/* Logo and Animated Title Text */}
       <div className="relative z-10 text-center animate-fade-in-scale">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <Image
+            src="/assets/image/logo.png"
+            alt="GenomaVeda Logo"
+            width={80}
+            height={80}
+            className="object-contain"
+          />
+        </div>
         <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight">
           GenomaVeda
         </h1>
