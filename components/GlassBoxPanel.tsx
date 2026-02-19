@@ -182,18 +182,44 @@ export default function GlassBoxPanel({ result }: GlassBoxPanelProps) {
           </div>
         </section>
 
-        {/* 4. Raw LLM Prompt */}
+        {/* 4. Exact AI Prompt — Prompt Transparency Log (F4) */}
         <section>
           <div className="flex items-center gap-2 mb-3">
             <Terminal className="w-3.5 h-3.5 text-teal-400" />
             <h4 className="text-xs font-mono font-bold text-offwhite uppercase tracking-wider">
-              LLM Prompt (Reconstructed)
+              View Exact AI Prompt
             </h4>
           </div>
           <div className="bg-base-900 rounded p-3 border border-offwhite/5 max-h-48 overflow-y-auto">
             <pre className="text-[11px] font-mono text-jade-500/80 leading-relaxed whitespace-pre-wrap">
               {prompt}
             </pre>
+          </div>
+          {/* PHI Exclusion List */}
+          <div className="mt-2 bg-base-800/80 rounded p-2.5 border border-purple-500/20">
+            <p className="text-[10px] font-mono text-purple-400 uppercase mb-1.5 font-bold">
+              ⛔ PHI Fields Excluded From Prompt
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                "raw_vcf_content",
+                "star_alleles",
+                "rsid_list",
+                "patient_metadata",
+                "sequence_data",
+                "variant_positions",
+              ].map((field) => (
+                <span
+                  key={field}
+                  className="text-[10px] font-mono px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-red-400"
+                >
+                  {field}
+                </span>
+              ))}
+            </div>
+            <p className="text-[10px] font-mono text-muted mt-2">
+              Only phenotype label + drug name sent to LLM • No genomic data • ε=1.0 differential privacy on confidence
+            </p>
           </div>
         </section>
       </div>

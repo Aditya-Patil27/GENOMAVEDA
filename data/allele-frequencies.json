@@ -1,0 +1,92 @@
+{
+  "rs4244285": {
+    "variant": "CYP2C19*2",
+    "gene": "CYP2C19",
+    "frequencies": {
+      "East Asian": 0.29,
+      "European": 0.15,
+      "African": 0.17,
+      "South Asian": 0.16,
+      "Latino": 0.14
+    },
+    "clinical_note": "Most common CYP2C19 LoF variant. Established CPIC evidence."
+  },
+  "rs3918290": {
+    "variant": "DPYD*2A",
+    "gene": "DPYD",
+    "frequencies": {
+      "European": 0.01,
+      "East Asian": 0.001,
+      "African": 0.003,
+      "South Asian": 0.002,
+      "Latino": 0.004
+    },
+    "clinical_note": "Rare but critical — fluoropyrimidine severe toxicity risk."
+  },
+  "rs1065852": {
+    "variant": "CYP2D6*2 (partial)",
+    "gene": "CYP2D6",
+    "frequencies": {
+      "European": 0.34,
+      "East Asian": 0.12,
+      "African": 0.08,
+      "South Asian": 0.28
+    },
+    "clinical_note": "Common reduced-function allele. Contributes to IM phenotype."
+  },
+  "rs3892097": {
+    "variant": "CYP2D6*4",
+    "gene": "CYP2D6",
+    "frequencies": {
+      "European": 0.21,
+      "East Asian": 0.01,
+      "African": 0.02,
+      "South Asian": 0.06
+    },
+    "clinical_note": "Most common CYP2D6 null allele in Europeans."
+  },
+  "rs1799853": {
+    "variant": "CYP2C9*2",
+    "gene": "CYP2C9",
+    "frequencies": {
+      "European": 0.13,
+      "East Asian": 0.01,
+      "African": 0.01,
+      "South Asian": 0.04
+    },
+    "clinical_note": "Reduced warfarin metabolism — dose reduction needed."
+  },
+  "rs4149056": {
+    "variant": "SLCO1B1*5",
+    "gene": "SLCO1B1",
+    "frequencies": {
+      "European": 0.15,
+      "East Asian": 0.16,
+      "African": 0.02,
+      "South Asian": 0.13
+    },
+    "clinical_note": "Simvastatin myopathy risk. CPIC recommends dose reduction."
+  },
+  "rs1800460": {
+    "variant": "TPMT*3B",
+    "gene": "TPMT",
+    "frequencies": {
+      "European": 0.017,
+      "East Asian": 0.002,
+      "African": 0.013,
+      "South Asian": 0.01
+    },
+    "clinical_note": "Non-functional TPMT allele. Azathioprine dose reduction required."
+  },
+  "rs1142345": {
+    "variant": "TPMT*3C",
+    "gene": "TPMT",
+    "frequencies": {
+      "European": 0.004,
+      "East Asian": 0.02,
+      "African": 0.054,
+      "South Asian": 0.015
+    },
+    "clinical_note": "Most common TPMT variant in East Asian populations."
+  }
+}

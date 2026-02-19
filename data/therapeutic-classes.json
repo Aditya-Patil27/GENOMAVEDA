@@ -1,0 +1,54 @@
+{
+  "opioid_analgesics": {
+    "drugs": ["CODEINE", "TRAMADOL", "OXYCODONE", "MORPHINE", "HYDROCODONE"],
+    "primary_gene": "CYP2D6",
+    "gene_dependencies": {
+      "CODEINE": { "gene": "CYP2D6", "dependency": "required_for_activation" },
+      "TRAMADOL": { "gene": "CYP2D6", "dependency": "partial_activation" },
+      "OXYCODONE": { "gene": "CYP2D6", "dependency": "minor_metabolism" },
+      "MORPHINE": { "gene": "UGT2B7", "dependency": "primary_metabolism" },
+      "HYDROCODONE": { "gene": "CYP2D6", "dependency": "partial_activation" }
+    }
+  },
+  "antiplatelet": {
+    "drugs": ["CLOPIDOGREL", "PRASUGREL", "TICAGRELOR"],
+    "primary_gene": "CYP2C19",
+    "gene_dependencies": {
+      "CLOPIDOGREL": { "gene": "CYP2C19", "dependency": "required_for_activation" },
+      "PRASUGREL": { "gene": "CYP2C19", "dependency": "none" },
+      "TICAGRELOR": { "gene": "CYP2C19", "dependency": "none" }
+    }
+  },
+  "anticoagulant": {
+    "drugs": ["WARFARIN"],
+    "primary_gene": "CYP2C9",
+    "gene_dependencies": {
+      "WARFARIN": { "gene": "CYP2C9", "dependency": "primary_metabolism" }
+    }
+  },
+  "statin": {
+    "drugs": ["SIMVASTATIN", "ROSUVASTATIN", "PRAVASTATIN"],
+    "primary_gene": "SLCO1B1",
+    "gene_dependencies": {
+      "SIMVASTATIN": { "gene": "SLCO1B1", "dependency": "transporter" },
+      "ROSUVASTATIN": { "gene": "SLCO1B1", "dependency": "minor_transporter" },
+      "PRAVASTATIN": { "gene": "SLCO1B1", "dependency": "minimal" }
+    }
+  },
+  "immunosuppressant": {
+    "drugs": ["AZATHIOPRINE", "MERCAPTOPURINE"],
+    "primary_gene": "TPMT",
+    "gene_dependencies": {
+      "AZATHIOPRINE": { "gene": "TPMT", "dependency": "primary_metabolism" },
+      "MERCAPTOPURINE": { "gene": "TPMT", "dependency": "primary_metabolism" }
+    }
+  },
+  "fluoropyrimidine": {
+    "drugs": ["FLUOROURACIL", "CAPECITABINE"],
+    "primary_gene": "DPYD",
+    "gene_dependencies": {
+      "FLUOROURACIL": { "gene": "DPYD", "dependency": "required_for_clearance" },
+      "CAPECITABINE": { "gene": "DPYD", "dependency": "required_for_clearance" }
+    }
+  }
+}

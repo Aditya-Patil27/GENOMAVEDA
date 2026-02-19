@@ -278,16 +278,11 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
         </div>
       </AccordionSection>
 
-<<<<<<< HEAD
-      {/* ─── Glass Box Panel (Clinician View Only) ─── */}
-      {viewMode === "clinician" && <GlassBoxPanel result={result} />}
+      {/* Glass Box Audit Trail */}
+      <GlassBoxPanel result={result} />
 
-      {/* Export row: JSON + FHIR + PDF */}
-      <div className="mt-4 pt-3 border-t border-offwhite/5 flex items-center gap-2 flex-wrap">
-=======
       {/* Export */}
-      <div className="mt-4 pt-3 border-t border-slate-700">
->>>>>>> 4db0482e61b6dadd9dd10e8b27a13dc81aaeba53
+      <div className="mt-4 pt-3 border-t border-slate-700 flex items-center gap-2 flex-wrap">
         <JsonExporter result={result} />
         <FhirExporter result={result} />
         <PdfReport result={result} />

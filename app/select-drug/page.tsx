@@ -34,10 +34,10 @@ export default function SelectDrugPage() {
         selectedDrugs.map(async (drug) => {
           const primaryGene = DRUG_GENE_MAP[drug];
 
-          // Client-side: resolve diplotype and assess risk
-          const diplotypeResult = resolveDiplotype(primaryGene, parsedVCFData.variants);
-          const risk = assessRisk(drug, diplotypeResult.phenotype);
+          // Client-side: resolve diplotype and assess risk (async — hits CPIC API)
+          const diplotypeResult = await resolveDiplotype(primaryGene, parsedVCFData.variants);
           const geneVariants = parsedVCFData.variants.filter((v) => v.gene === primaryGene);
+          const risk = await assessRisk(drug, diplotypeResult.phenotype, primaryGene, geneVariants.length, diplotypeResult.exactMatch);
           const patientId = `PATIENT_${uuidv4().substring(0, 8).toUpperCase()}`;
 
           // Call backend for LLM explanation (phenotype only — no genomic data)
@@ -126,7 +126,7 @@ export default function SelectDrugPage() {
             quality_metrics: {
               vcf_parsing_success: parsedVCFData.success,
               variants_detected: parsedVCFData.variants.length,
-              genes_analyzed: [...new Set(parsedVCFData.variants.map((v) => v.gene))],
+              genes_analyzed: Array.from(new Set(parsedVCFData.variants.map((v) => v.gene))),
               annotation_completeness:
                 parsedVCFData.variants.length > 0 ? 0.95 : 0.6,
               parse_warnings: parsedVCFData.warnings,

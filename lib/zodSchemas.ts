@@ -93,6 +93,16 @@ export const AnalysisResultSchema = z.object({
     genes_analyzed: z.array(z.string()),
     annotation_completeness: z.number(),
     parse_warnings: z.array(z.string()),
+    // F2: Privacy Audit — self-documenting privacy in JSON output
+    privacy_audit: z.object({
+      raw_vcf_retained_on_server: z.literal(false),
+      variants_processed_locally: z.literal(true),
+      data_sent_to_llm: z.enum(["phenotype_label_only", "none"]),
+      phi_fields_excluded_from_api: z.array(z.string()),
+      llm_prompt_contained_phi: z.literal(false),
+      session_auto_clear_enabled: z.boolean(),
+      differential_privacy_applied: z.boolean(),
+    }).optional(),
   }),
   // Optional dynamic data source metadata
   data_source: z.object({
@@ -101,6 +111,15 @@ export const AnalysisResultSchema = z.object({
     cpic_implications: z.string(),
     diplotype_exact_match: z.boolean(),
     confidence_basis: z.string(),
+  }).optional(),
+  // F4: Prompt transparency log — shows exact LLM prompt for XAI
+  prompt_log: z.object({
+    system_prompt: z.string(),
+    user_prompt: z.string(),
+    phi_excluded: z.array(z.string()),
+    cpic_context_source: z.string(),
+    model: z.string(),
+    tokens_estimated: z.number(),
   }).optional(),
 });
 

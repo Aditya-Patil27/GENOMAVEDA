@@ -1,0 +1,36 @@
+{
+  "edges": [
+    { "from": "CODEINE", "to": "CYP2D6", "type": "metabolized_by", "weight": 1.0 },
+    { "from": "TRAMADOL", "to": "CYP2D6", "type": "metabolized_by", "weight": 0.7 },
+    { "from": "OXYCODONE", "to": "CYP2D6", "type": "metabolized_by", "weight": 0.3 },
+    { "from": "HYDROCODONE", "to": "CYP2D6", "type": "metabolized_by", "weight": 0.7 },
+    { "from": "CLOPIDOGREL", "to": "CYP2C19", "type": "metabolized_by", "weight": 1.0 },
+    { "from": "WARFARIN", "to": "CYP2C9", "type": "metabolized_by", "weight": 1.0 },
+    { "from": "SIMVASTATIN", "to": "SLCO1B1", "type": "transported_by", "weight": 0.9 },
+    { "from": "AZATHIOPRINE", "to": "TPMT", "type": "metabolized_by", "weight": 1.0 },
+    { "from": "FLUOROURACIL", "to": "DPYD", "type": "metabolized_by", "weight": 1.0 },
+    { "from": "CODEINE", "to": "TRAMADOL", "type": "competes", "shared_gene": "CYP2D6", "weight": 0.8 },
+    { "from": "CODEINE", "to": "OXYCODONE", "type": "competes", "shared_gene": "CYP2D6", "weight": 0.4 },
+    { "from": "CODEINE", "to": "HYDROCODONE", "type": "competes", "shared_gene": "CYP2D6", "weight": 0.7 },
+    { "from": "TRAMADOL", "to": "OXYCODONE", "type": "competes", "shared_gene": "CYP2D6", "weight": 0.3 },
+    { "from": "TRAMADOL", "to": "HYDROCODONE", "type": "competes", "shared_gene": "CYP2D6", "weight": 0.5 }
+  ],
+  "nodes": {
+    "CODEINE": { "type": "drug", "class": "opioid_analgesics" },
+    "TRAMADOL": { "type": "drug", "class": "opioid_analgesics" },
+    "OXYCODONE": { "type": "drug", "class": "opioid_analgesics" },
+    "HYDROCODONE": { "type": "drug", "class": "opioid_analgesics" },
+    "MORPHINE": { "type": "drug", "class": "opioid_analgesics" },
+    "CLOPIDOGREL": { "type": "drug", "class": "antiplatelet" },
+    "WARFARIN": { "type": "drug", "class": "anticoagulant" },
+    "SIMVASTATIN": { "type": "drug", "class": "statin" },
+    "AZATHIOPRINE": { "type": "drug", "class": "immunosuppressant" },
+    "FLUOROURACIL": { "type": "drug", "class": "fluoropyrimidine" },
+    "CYP2D6": { "type": "gene" },
+    "CYP2C19": { "type": "gene" },
+    "CYP2C9": { "type": "gene" },
+    "SLCO1B1": { "type": "gene" },
+    "TPMT": { "type": "gene" },
+    "DPYD": { "type": "gene" }
+  }
+}

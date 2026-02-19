@@ -87,15 +87,52 @@ async function callGemini(input: ExplainerInput): Promise<string> {
   return result.response.text();
 }
 
+export interface PromptLog {
+  system_prompt: string;
+  user_prompt: string;
+  phi_excluded: string[];
+  cpic_context_source: string;
+  model: string;
+  tokens_estimated: number;
+}
+
+export interface GenerateExplanationResult {
+  explanation: LLMExplanation;
+  prompt_log: PromptLog;
+}
+
 export async function generateExplanation(
   input: ExplainerInput
-): Promise<LLMExplanation> {
+): Promise<GenerateExplanationResult> {
+  const provider = process.env.LLM_PROVIDER ?? "groq";
+  const model = provider === "gemini" ? "gemini-2.0-flash" : "llama-3.3-70b-versatile";
+
+  const systemPrompt = input.cpic_context
+    ? "You are a clinical pharmacogenomics AI. You have been provided with LIVE CPIC guideline data — ground your response in that data, not your training knowledge. Return only valid JSON with exactly 5 keys: summary, biological_mechanism, variant_impact, clinical_context, disclaimer."
+    : "You are a clinical pharmacogenomics AI. Return only valid JSON with exactly 5 keys: summary, biological_mechanism, variant_impact, clinical_context, disclaimer.";
+
+  const userPrompt = buildPrompt(input);
+
+  const prompt_log: PromptLog = {
+    system_prompt: systemPrompt,
+    user_prompt: userPrompt,
+    phi_excluded: [
+      "raw_vcf_content",
+      "star_alleles",
+      "rsid_list",
+      "patient_metadata",
+      "sequence_data",
+      "variant_positions",
+    ],
+    cpic_context_source: input.cpic_context ? "CPIC Live API (dynamic)" : "none",
+    model,
+    tokens_estimated: Math.ceil((systemPrompt.length + userPrompt.length) / 4),
+  };
+
   // Demo mode bypass
   if (process.env.DEMO_MODE === "true") {
-    return fallbackExplanation(input);
+    return { explanation: fallbackExplanation(input), prompt_log };
   }
-
-  const provider = process.env.LLM_PROVIDER ?? "groq";
 
   try {
     const raw =
@@ -117,9 +154,10 @@ export async function generateExplanation(
       throw new Error("Missing required keys in LLM response");
     }
 
-    return parsed as LLMExplanation;
+    return { explanation: parsed as LLMExplanation, prompt_log };
   } catch (error) {
     console.error(`[LLM][${provider}] Failed — activating fallback:`, error);
-    return fallbackExplanation(input);
+    return { explanation: fallbackExplanation(input), prompt_log };
   }
 }
+

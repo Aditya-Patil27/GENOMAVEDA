@@ -2,7 +2,7 @@
 
 import React, { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, CheckCircle2, FileText } from "lucide-react";
+import { Shield, CheckCircle2, FileText, Beaker } from "lucide-react";
 import Dropzone from "@/components/Dropzone";
 import ProgressIndicator from "@/components/ProgressIndicator";
 import { parseVCF, ParsedVCF } from "@/lib/vcf-parser";
@@ -14,7 +14,7 @@ export default function UploadPage() {
 
   const handleFileLoaded = useCallback(
     (_content: string, _fileName: string, parsed: ParsedVCF) => {
-      const genes = [...new Set(parsed.variants.map((v) => v.gene))];
+      const genes = Array.from(new Set(parsed.variants.map((v) => v.gene)));
       
       // Store in context
       setParsedVCFData(parsed);
@@ -45,6 +45,13 @@ export default function UploadPage() {
 
             {/* Right: Badges */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push("/researcher")}
+                className="clinical-badge bg-teal-500/10 border border-teal-500/30 text-teal-400 hover:bg-teal-500/20 transition-colors cursor-pointer"
+              >
+                <Beaker className="w-3 h-3 mr-1.5" />
+                RESEARCHER SANDBOX
+              </button>
               <span className="clinical-badge bg-slate-800 border border-slate-700 text-slate-300">
                 <CheckCircle2 className="w-3 h-3 mr-1.5" />
                 CPIC-ALIGNED

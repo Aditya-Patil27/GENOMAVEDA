@@ -1,3 +1,5 @@
+import { privatizeConfidenceScore, DPResult } from "./differential-privacy";
+
 /**
  * Evidence-Based Confidence Calculator
  *
@@ -6,6 +8,7 @@
  *
  * confidence = baseScore(cpicLevel) + variantBonus + matchBonus
  * Capped at 0.99 (never claim 100% certainty for clinical predictions).
+ * F3: Laplace-mechanism differential privacy (ε=1.0) applied to output.
  */
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -35,13 +38,14 @@ const CLASSIFICATION_BASE_SCORE: Record<string, number> = {
  * Calculate evidence-based confidence score.
  *
  * @param factors - The evidence factors for this analysis
- * @returns A confidence score between 0.10 and 0.99
+ * @returns A confidence score between 0.10 and 0.99 with DP applied
  *
  * Formula breakdown:
  * - Base: 0.90 (Strong), 0.75 (Moderate), 0.60 (Optional)
  * - Variant count bonus: +0.03 per variant, max +0.10
  * - Exact diplotype match: +0.05 (matched in CPIC DB), or −0.15 (inferred)
  * - Star allele resolution: −0.05 if resolved from rsID (vs direct STAR= tag)
+ * - F3: Laplace DP noise (ε=1.0, sensitivity=0.1)
  */
 export function calculateConfidence(factors: ConfidenceFactors): number {
   // 1. Base score from CPIC evidence level
@@ -61,7 +65,26 @@ export function calculateConfidence(factors: ConfidenceFactors): number {
   const raw = baseScore + variantBonus + matchBonus + resolutionPenalty;
   const clamped = Math.max(0.10, Math.min(raw, 0.99));
 
-  return parseFloat(clamped.toFixed(2));
+  // 6. F3: Apply differential privacy (Laplace, ε=1.0)
+  const dp = privatizeConfidenceScore(clamped, 1.0, 0.1);
+
+  return dp.privatized_score;
+}
+
+/**
+ * Calculate confidence WITH full DP audit trail.
+ * Returns both the privatized score and the audit metadata.
+ */
+export function calculateConfidenceWithDP(factors: ConfidenceFactors): DPResult {
+  const classification = factors.cpicClassification.toLowerCase();
+  const baseScore = CLASSIFICATION_BASE_SCORE[classification] ?? 0.50;
+  const variantBonus = Math.min(factors.variantCount * 0.03, 0.10);
+  const matchBonus = factors.diplotypeExactMatch ? 0.05 : -0.15;
+  const resolutionPenalty = factors.starAlleleResolved ? 0 : -0.05;
+  const raw = baseScore + variantBonus + matchBonus + resolutionPenalty;
+  const clamped = Math.max(0.10, Math.min(raw, 0.99));
+
+  return privatizeConfidenceScore(clamped, 1.0, 0.1);
 }
 
 /**
