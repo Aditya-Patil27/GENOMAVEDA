@@ -1,0 +1,312 @@
+{
+  "CODEINE": {
+    "gene": "CYP2D6",
+    "rules": {
+      "PM": {
+        "risk_label": "Ineffective",
+        "severity": "moderate",
+        "confidence": 0.92,
+        "recommendation": "Avoid codeine. Poor metabolizers cannot convert codeine to morphine.",
+        "dose_adjustment": "Do not use",
+        "alternatives": ["tramadol (with caution)", "morphine", "oxycodone"],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "URM": {
+        "risk_label": "Toxic",
+        "severity": "critical",
+        "confidence": 0.95,
+        "recommendation": "CONTRAINDICATED. Ultra-rapid metabolizers convert codeine to morphine too rapidly — risk of life-threatening respiratory depression.",
+        "dose_adjustment": "CONTRAINDICATED",
+        "alternatives": ["tramadol", "NSAIDs", "non-opioid analgesics"],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "IM": {
+        "risk_label": "Adjust Dosage",
+        "severity": "low",
+        "confidence": 0.85,
+        "recommendation": "Use with caution. Reduced morphine conversion may decrease analgesic effect.",
+        "dose_adjustment": "Consider alternative analgesic",
+        "alternatives": ["morphine", "oxycodone"],
+        "monitoring": true,
+        "cpic_strength": "moderate"
+      },
+      "NM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.90,
+        "recommendation": "Standard dosing appropriate.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "RM": {
+        "risk_label": "Adjust Dosage",
+        "severity": "low",
+        "confidence": 0.80,
+        "recommendation": "Monitor for increased opioid effects. Consider lower starting dose.",
+        "dose_adjustment": "Reduce initial dose by 25%",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "moderate"
+      },
+      "Unknown": {
+        "risk_label": "Unknown",
+        "severity": "low",
+        "confidence": 0.30,
+        "recommendation": "Unable to determine metabolizer status. Consult clinical pharmacist.",
+        "dose_adjustment": "Unknown",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "optional"
+      }
+    }
+  },
+  "CLOPIDOGREL": {
+    "gene": "CYP2C19",
+    "rules": {
+      "PM": {
+        "risk_label": "Ineffective",
+        "severity": "high",
+        "confidence": 0.93,
+        "recommendation": "Clopidogrel is ineffective in poor metabolizers. Significantly increased risk of major adverse cardiovascular events (MACE).",
+        "dose_adjustment": "Do not use",
+        "alternatives": ["prasugrel", "ticagrelor"],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "IM": {
+        "risk_label": "Adjust Dosage",
+        "severity": "moderate",
+        "confidence": 0.88,
+        "recommendation": "Reduced antiplatelet effect. Consider alternative antiplatelet therapy.",
+        "dose_adjustment": "Consider prasugrel or ticagrelor",
+        "alternatives": ["prasugrel", "ticagrelor"],
+        "monitoring": true,
+        "cpic_strength": "moderate"
+      },
+      "NM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.91,
+        "recommendation": "Standard clopidogrel dosing recommended.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "RM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.85,
+        "recommendation": "Standard dosing appropriate.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": false,
+        "cpic_strength": "moderate"
+      },
+      "URM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.83,
+        "recommendation": "Standard dosing appropriate. Marginally increased conversion.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": false,
+        "cpic_strength": "optional"
+      },
+      "Unknown": {
+        "risk_label": "Unknown",
+        "severity": "low",
+        "confidence": 0.30,
+        "recommendation": "Unable to determine metabolizer status. Consult clinical pharmacist.",
+        "dose_adjustment": "Unknown",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "optional"
+      }
+    }
+  },
+  "WARFARIN": {
+    "gene": "CYP2C9",
+    "rules": {
+      "PM": {
+        "risk_label": "Toxic",
+        "severity": "critical",
+        "confidence": 0.94,
+        "recommendation": "High bleeding risk. Significantly reduce starting dose. Requires intensive INR monitoring.",
+        "dose_adjustment": "Reduce starting dose by 50-75%",
+        "alternatives": ["direct oral anticoagulants (DOACs)"],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "IM": {
+        "risk_label": "Adjust Dosage",
+        "severity": "moderate",
+        "confidence": 0.89,
+        "recommendation": "Reduced warfarin metabolism. Use lower starting dose and monitor INR closely.",
+        "dose_adjustment": "Reduce starting dose by 25-50%",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "NM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.90,
+        "recommendation": "Standard warfarin dosing. Use CPIC/IWPC dosing algorithm.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "Unknown": {
+        "risk_label": "Unknown",
+        "severity": "low",
+        "confidence": 0.30,
+        "recommendation": "Unable to determine metabolizer status. Consult clinical pharmacist.",
+        "dose_adjustment": "Unknown",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "optional"
+      }
+    }
+  },
+  "SIMVASTATIN": {
+    "gene": "SLCO1B1",
+    "rules": {
+      "PM": {
+        "risk_label": "Toxic",
+        "severity": "high",
+        "confidence": 0.91,
+        "recommendation": "High risk of simvastatin-induced myopathy. Avoid simvastatin 40mg+ doses.",
+        "dose_adjustment": "Use ≤20mg/day or switch to pravastatin/rosuvastatin",
+        "alternatives": ["pravastatin", "rosuvastatin", "fluvastatin"],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "IM": {
+        "risk_label": "Adjust Dosage",
+        "severity": "moderate",
+        "confidence": 0.86,
+        "recommendation": "Increased myopathy risk with higher doses. Prescribe lower doses.",
+        "dose_adjustment": "Limit to ≤40mg/day",
+        "alternatives": ["pravastatin", "rosuvastatin"],
+        "monitoring": true,
+        "cpic_strength": "moderate"
+      },
+      "NM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.88,
+        "recommendation": "Standard simvastatin dosing appropriate.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "Unknown": {
+        "risk_label": "Unknown",
+        "severity": "low",
+        "confidence": 0.30,
+        "recommendation": "Unable to determine metabolizer status. Consult clinical pharmacist.",
+        "dose_adjustment": "Unknown",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "optional"
+      }
+    }
+  },
+  "AZATHIOPRINE": {
+    "gene": "TPMT",
+    "rules": {
+      "PM": {
+        "risk_label": "Toxic",
+        "severity": "critical",
+        "confidence": 0.96,
+        "recommendation": "TPMT-deficient patients are at very high risk of life-threatening myelosuppression. Reduce dose by 90% or use alternative.",
+        "dose_adjustment": "Reduce to 10% of standard dose OR switch to alternative",
+        "alternatives": ["mycophenolate mofetil", "cyclosporine"],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "IM": {
+        "risk_label": "Adjust Dosage",
+        "severity": "moderate",
+        "confidence": 0.92,
+        "recommendation": "Reduce starting dose by 30-70% and titrate based on response and toxicity.",
+        "dose_adjustment": "Start at 30-70% of standard dose",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "NM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.93,
+        "recommendation": "Standard azathioprine dosing appropriate.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "Unknown": {
+        "risk_label": "Unknown",
+        "severity": "low",
+        "confidence": 0.30,
+        "recommendation": "Unable to determine metabolizer status. Consult clinical pharmacist.",
+        "dose_adjustment": "Unknown",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "optional"
+      }
+    }
+  },
+  "FLUOROURACIL": {
+    "gene": "DPYD",
+    "rules": {
+      "PM": {
+        "risk_label": "Toxic",
+        "severity": "critical",
+        "confidence": 0.95,
+        "recommendation": "DPYD-deficient patients face life-threatening fluoropyrimidine toxicity (severe mucositis, diarrhea, neutropenia). Avoid fluorouracil.",
+        "dose_adjustment": "CONTRAINDICATED or reduce by ≥50% with careful monitoring",
+        "alternatives": ["alternative chemotherapy regimens"],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "IM": {
+        "risk_label": "Adjust Dosage",
+        "severity": "high",
+        "confidence": 0.90,
+        "recommendation": "Reduce starting dose by 25-50%. Titrate based on toxicity.",
+        "dose_adjustment": "Reduce dose by 25-50%",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "strong"
+      },
+      "NM": {
+        "risk_label": "Safe",
+        "severity": "none",
+        "confidence": 0.91,
+        "recommendation": "Standard fluorouracil dosing appropriate.",
+        "dose_adjustment": "None required",
+        "alternatives": [],
+        "monitoring": false,
+        "cpic_strength": "strong"
+      },
+      "Unknown": {
+        "risk_label": "Unknown",
+        "severity": "low",
+        "confidence": 0.30,
+        "recommendation": "Unable to determine metabolizer status. Consult clinical pharmacist.",
+        "dose_adjustment": "Unknown",
+        "alternatives": [],
+        "monitoring": true,
+        "cpic_strength": "optional"
+      }
+    }
+  }
+}
