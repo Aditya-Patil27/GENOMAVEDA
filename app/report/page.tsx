@@ -20,17 +20,8 @@ export default function ReportPage() {
     }
   }, [analysisResult, router]);
 
-  useEffect(() => {
-    // Check if user has already seen the video in this session
-    const videoSeen = sessionStorage.getItem("pharmaguard_video_seen");
-    if (videoSeen === "true") {
-      setShowOverlay(false);
-    }
-  }, []);
-
   const handleOverlayComplete = () => {
     setShowOverlay(false);
-    sessionStorage.setItem("pharmaguard_video_seen", "true");
   };
 
   if (!analysisResult || analysisResult.length === 0) {
