@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Download, Copy, Check } from "lucide-react";
+import { Download, Copy, Check, AlertCircle } from "lucide-react";
 import { AnalysisResult } from "@/lib/types";
+import { formatToPSJson, formatToExtendedJson, validatePSJson } from "@/lib/jsonFormatters";
 
 interface JsonExporterProps {
   result: AnalysisResult;
@@ -10,15 +11,41 @@ interface JsonExporterProps {
 
 export default function JsonExporter({ result }: JsonExporterProps) {
   const [copied, setCopied] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const jsonString = JSON.stringify(result, null, 2);
+  const handleDownloadSubmission = () => {
+    // Format to PS-compliant JSON
+    const psJson = formatToPSJson(result);
+    
+    // Validate before download
+    const validation = validatePSJson(psJson);
+    if (!validation.success) {
+      setValidationError(validation.error || "Validation failed");
+      setTimeout(() => setValidationError(null), 5000);
+      return;
+    }
 
-  const handleDownload = () => {
+    const jsonString = JSON.stringify(psJson, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `pharmaguard_${result.patient_id}_${result.drug}_${result.timestamp.replace(/[:.]/g, "-")}.json`;
+    a.download = `genomaveda_submission_${result.patient_id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadFull = () => {
+    // Format to extended JSON (no validation)
+    const extendedJson = formatToExtendedJson(result);
+    const jsonString = JSON.stringify(extendedJson, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `genomaveda_full_${result.patient_id}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -26,6 +53,7 @@ export default function JsonExporter({ result }: JsonExporterProps) {
   };
 
   const handleCopy = async () => {
+    const jsonString = JSON.stringify(result, null, 2);
     try {
       await navigator.clipboard.writeText(jsonString);
       setCopied(true);
@@ -44,27 +72,44 @@ export default function JsonExporter({ result }: JsonExporterProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={handleDownload}
-        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 rounded transition-colors"
-        title="Download JSON"
-      >
-        <Download className="w-3.5 h-3.5" />
-        JSON
-      </button>
-      <button
-        onClick={handleCopy}
-        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border rounded transition-all ${
-          copied
-            ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-            : "text-slate-400 hover:text-slate-300 bg-slate-700/50 hover:bg-slate-700 border-slate-600"
-        }`}
-        title="Copy to clipboard"
-      >
-        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-        {copied ? "Copied!" : "Copy"}
-      </button>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={handleDownloadSubmission}
+          className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 rounded transition-colors"
+          title="Download PS-compliant submission JSON"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Submission JSON
+        </button>
+        <button
+          onClick={handleDownloadFull}
+          className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-300 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded transition-colors"
+          title="Download full technical JSON with metadata"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Full Technical JSON
+        </button>
+        <button
+          onClick={handleCopy}
+          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium border rounded transition-all ${
+            copied
+              ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+              : "text-slate-400 hover:text-slate-300 bg-slate-700/50 hover:bg-slate-700 border-slate-600"
+          }`}
+          title="Copy to clipboard"
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      
+      {validationError && (
+        <div className="flex items-start gap-2 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+          <span>Validation Error: {validationError}</span>
+        </div>
+      )}
     </div>
   );
 }
