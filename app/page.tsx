@@ -10,15 +10,15 @@ export default function SplashPage() {
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    // Start fade out after 4.5 seconds
+    // Start fade out after 1.5 seconds
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
-    }, 4500);
+    }, 1500);
 
-    // Navigate after fade completes (5 seconds total)
+    // Navigate after fade completes (2 seconds total)
     const navTimer = setTimeout(() => {
       router.push("/upload");
-    }, 5000);
+    }, 2000);
 
     return () => {
       clearTimeout(fadeTimer);
