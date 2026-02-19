@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "PharmaGuard — Pharmacogenomic Risk Prediction",
+  title: "GenomaVeda — Pharmacogenomic Risk Prediction",
   description:
     "AI-powered pharmacogenomics analysis: preventing adverse drug reactions through precision medicine. Upload VCF files and get CPIC-aligned risk predictions.",
   keywords: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "PharmaGuard",
+    title: "GenomaVeda",
   },
 };
 

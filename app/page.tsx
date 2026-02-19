@@ -20,11 +20,11 @@ export default function SplashPage() {
       {/* Plasma Animation Background */}
       <div className="absolute inset-0 z-0">
         <PlasmaBackground
-          color="#14b8a6"
-          speed={0.8}
+          color="#ffffff"
+          speed={0.6}
           direction="forward"
           scale={1}
-          opacity={0.6}
+          opacity={0.8}
           mouseInteractive={true}
         />
       </div>
