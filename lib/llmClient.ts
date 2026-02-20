@@ -24,11 +24,19 @@ IMPORTANT: Base your explanation on the EXACT guideline data above, not your tra
 `;
   }
 
+  const phenotype = input.phenotype;
+  const antiHallucinationInjection = (phenotype === "NM" || phenotype === "Normal Function")
+    ? `CRITICAL: If the phenotype is NM (Normal Metabolizer), you MUST NOT use phrases like "altered rate" or "compared to normal metabolizers". The patient IS a normal metabolizer. Describe normal function as normal.`
+    : "CRITICAL INSTRUCTION: Explain how this specific phenotype alters standard metabolism based strictly on CPIC guidelines.";
+
   return `Pharmacogenomics analysis for CPIC-aligned clinical system.
 Drug: ${input.drug} | Gene: ${input.gene}
 Phenotype: ${input.phenotype} (${phenotypeNames[input.phenotype] ?? "Unknown"})
-Diplotype: ${input.diplotype} | Risk: ${input.risk_label}
+Risk: ${input.risk_label}
 ${guidelineContext}
+
+${antiHallucinationInjection}
+
 Return JSON with EXACTLY these 5 keys, nothing else:
 {
   "summary": "2-3 sentence patient-friendly explanation",
@@ -58,7 +66,7 @@ async function callGroq(input: ExplainerInput): Promise<string> {
           { role: "system", content: systemMessage },
           { role: "user", content: buildPrompt(input) },
         ],
-        temperature: 0.3,
+        temperature: 0.1, // Lowered for determinism
         max_tokens: 800,
         response_format: { type: "json_object" },
       },
@@ -133,6 +141,11 @@ export async function generateExplanation(
   if (process.env.DEMO_MODE === "true") {
     return { explanation: fallbackExplanation(input), prompt_log };
   }
+  
+  // Privacy Log for Audit
+  console.log("\n⛔ PHI Fields Excluded From Prompt");
+  console.log(prompt_log.phi_excluded.join("\n"));
+  console.log("Only phenotype label + drug name sent to LLM • No genomic data • ε=1.0 differential privacy on confidence\n");
 
   try {
     const raw =

@@ -83,7 +83,7 @@ export default function GlassBoxPanel({ result }: GlassBoxPanelProps) {
       <div className="flex items-center gap-2 px-4 py-2.5 bg-teal-400/5 border-b border-teal-400/15">
         <Terminal className="w-4 h-4 text-teal-400" />
         <span className="text-xs font-mono font-bold text-teal-400 uppercase tracking-wider">
-          Glass Box — Audit Trail
+          Glass Box — Deterministic Trace
         </span>
         <span className="ml-auto text-xs text-muted font-mono">
           {result.timestamp}
@@ -142,7 +142,7 @@ export default function GlassBoxPanel({ result }: GlassBoxPanelProps) {
             <div className="bg-base-800/80 rounded p-2.5 border border-offwhite/5">
               <p className="text-[10px] font-mono text-muted uppercase mb-1">Data Source</p>
               <p className="text-xs font-mono text-teal-400 font-semibold">
-                {ds?.cpic_api ? "Live CPIC API" : "Fallback Cache"}
+                {ds?.confidence_basis || (ds?.cpic_api ? "Live CPIC API" : "Fallback Cache")}
               </p>
             </div>
           </div>

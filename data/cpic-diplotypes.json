@@ -7,6 +7,8 @@
     "*2/*17": { "phenotype": "IM", "activity_score": 1.0 },
     "*17/*17": { "phenotype": "URM", "activity_score": 3.0 },
     "*1/*3": { "phenotype": "IM", "activity_score": 1.0 },
+    "*1/*3": { "phenotype": "IM", "activity_score": 1.0 },
+    "*2/*3": { "phenotype": "PM", "activity_score": 0.0 },
     "*3/*3": { "phenotype": "PM", "activity_score": 0.0 }
   },
   "CYP2C9": {
@@ -24,6 +26,13 @@
     "*1/*2x2": { "phenotype": "URM", "activity_score": 3.0 },
     "*10/*10": { "phenotype": "IM", "activity_score": 0.5 },
     "*5/*5": { "phenotype": "PM", "activity_score": 0.0 },
+
+    "*1/*2": { "phenotype": "NM", "activity_score": 2.0 },
+    "*1/*9": { "phenotype": "NM", "activity_score": 1.5 },
+    "*1/*41": { "phenotype": "NM", "activity_score": 1.5 },
+    "*2/*2": { "phenotype": "NM", "activity_score": 2.0 },
+    "*3/*4": { "phenotype": "PM", "activity_score": 0.0 },
+    "*2/*41": { "phenotype": "IM", "activity_score": 1.5 },
     "*Unknown/*Unknown": { "phenotype": "Unknown", "activity_score": 0.0 }
   },
   "SLCO1B1": {

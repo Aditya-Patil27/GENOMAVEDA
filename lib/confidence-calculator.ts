@@ -21,6 +21,8 @@ export interface ConfidenceFactors {
   diplotypeExactMatch: boolean;
   /** Whether the star allele was resolved from rsID (vs from STAR= tag) */
   starAlleleResolved: boolean;
+  /** Minimum Genotype Quality (GQ) of detected variants (0-99) */
+  minGQ?: number;
 }
 
 // ─── Score Tables ───────────────────────────────────────────────
@@ -40,29 +42,35 @@ const CLASSIFICATION_BASE_SCORE: Record<string, number> = {
  * @param factors - The evidence factors for this analysis
  * @returns A confidence score between 0.10 and 0.99 with DP applied
  *
- * Formula breakdown:
- * - Base: 0.90 (Strong), 0.75 (Moderate), 0.60 (Optional)
- * - Variant count bonus: +0.03 per variant, max +0.10
- * - Exact diplotype match: +0.05 (matched in CPIC DB), or −0.15 (inferred)
- * - Star allele resolution: −0.05 if resolved from rsID (vs direct STAR= tag)
- * - F3: Laplace DP noise (ε=1.0, sensitivity=0.1)
+ * Formula breakdown (Weighted Confidence Model):
+ * C = α·Cvcf + β·Cann + γ·Cmodel
+ *
+ * 1. Cvcf = min(1, GQ/60)  [Genotype Call Quality]
+ * 2. Cann = 1.0 if exact match, else 0.8 [Annotation Quality]
+ * 3. Cmodel = 0.95 (Deterministic Rules) [Model Certainty]
+ * Factors: α=0.4, β=0.3, γ=0.3
  */
 export function calculateConfidence(factors: ConfidenceFactors): number {
-  // 1. Base score from CPIC evidence level
-  const classification = factors.cpicClassification.toLowerCase();
-  const baseScore = CLASSIFICATION_BASE_SCORE[classification] ?? 0.50;
+  // 1. Cvcf: Genotype Quality
+  // Default to 60 (high confidence) if minGQ not provided (e.g. legacy calls)
+  const gq = factors.minGQ !== undefined ? factors.minGQ : 60;
+  const c_vcf = Math.min(1.0, gq / 60.0);
 
-  // 2. Variant count bonus (more variants detected = higher confidence in genotype)
-  const variantBonus = Math.min(factors.variantCount * 0.03, 0.10);
+  // 2. Cann: Annotation Quality (Diplotype match)
+  const c_ann = factors.diplotypeExactMatch ? 1.0 : 0.8;
 
-  // 3. Diplotype match quality
-  const matchBonus = factors.diplotypeExactMatch ? 0.05 : -0.15;
+  // 3. Cmodel: Model Certainty (High for deterministic CPIC rules)
+  // Downgrade slightly if star allele had to be inferred from RSID
+  const c_model = factors.starAlleleResolved ? 0.95 : 0.90;
 
-  // 4. Star allele resolution penalty (rsID→star is less certain than direct STAR= tag)
-  const resolutionPenalty = factors.starAlleleResolved ? 0 : -0.05;
+  // Weighted Sum
+  const alpha = 0.4;
+  const beta = 0.3;
+  const gamma = 0.3;
 
-  // 5. Combine and clamp
-  const raw = baseScore + variantBonus + matchBonus + resolutionPenalty;
+  const raw = (alpha * c_vcf) + (beta * c_ann) + (gamma * c_model);
+  
+  // Clamp
   const clamped = Math.max(0.10, Math.min(raw, 0.99));
 
   // 6. F3: Apply differential privacy (Laplace, ε=1.0)

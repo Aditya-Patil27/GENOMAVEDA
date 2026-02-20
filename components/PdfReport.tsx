@@ -12,7 +12,7 @@ interface PdfReportProps {
  * Generate a styled HTML string for the clinical report,
  * then use the browser print-to-PDF flow (window.print).
  */
-function buildReportHTML(result: AnalysisResult): string {
+export function buildReportHTML(result: AnalysisResult): string {
   const profile = result.pharmacogenomic_profile;
   const risk = result.risk_assessment;
   const rec = result.clinical_recommendation;
@@ -30,11 +30,12 @@ function buildReportHTML(result: AnalysisResult): string {
 
   const variantsHTML = profile.detected_variants.length > 0
     ? `<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;">
-        <tr style="background:#f5f5f5;"><th style="padding:6px;text-align:left;border:1px solid #ddd;">rsID</th><th style="padding:6px;text-align:left;border:1px solid #ddd;">Gene</th><th style="padding:6px;text-align:left;border:1px solid #ddd;">Star Allele</th><th style="padding:6px;text-align:left;border:1px solid #ddd;">Zygosity</th><th style="padding:6px;text-align:left;border:1px solid #ddd;">Chr:Position</th></tr>
+        <tr style="background:#f5f5f5;"><th style="padding:6px;text-align:left;border:1px solid #ddd;">Gene</th><th style="padding:6px;text-align:left;border:1px solid #ddd;">Clinical Significance</th><th style="padding:6px;text-align:center;border:1px solid #ddd;">Privacy Status</th></tr>
         ${profile.detected_variants.map(v => `
-          <tr><td style="padding:5px;border:1px solid #ddd;font-family:monospace;">${v.rsid}</td><td style="padding:5px;border:1px solid #ddd;">${v.gene}</td><td style="padding:5px;border:1px solid #ddd;font-family:monospace;">${v.star_allele}</td><td style="padding:5px;border:1px solid #ddd;">${v.zygosity}</td><td style="padding:5px;border:1px solid #ddd;font-family:monospace;">chr${v.chromosome}:${v.position}</td></tr>
+          <tr><td style="padding:5px;border:1px solid #ddd;">${v.gene}</td><td style="padding:5px;border:1px solid #ddd;">${v.clinical_significance || "Variant Detected"}</td><td style="padding:5px;border:1px solid #ddd;font-family:monospace;text-align:center;color:#00A87D;">MASKED</td></tr>
         `).join("")}
-       </table>`
+       </table>
+       <p style="font-size:10px;color:#999;margin-top:4px;">* Raw genomic data (rsID, Position, Star Allele) masked for privacy.</p>`
     : "<p style='color:#999;font-size:11px;'>No variants detected for this gene.</p>";
 
   return `

@@ -11,6 +11,7 @@ import { Drug, DRUG_GENE_MAP, AnalysisResult } from "@/lib/types";
 import { resolveDiplotype } from "@/lib/diplotype-lookup";
 import { assessRisk } from "@/lib/risk-engine";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
+import { anonymizePatientId } from "@/lib/patient-id";
 
 export default function SelectDrugPage() {
   const router = useRouter();
@@ -37,9 +38,27 @@ export default function SelectDrugPage() {
 
           // Client-side: resolve diplotype and assess risk (async — hits CPIC API)
           const diplotypeResult = await resolveDiplotype(primaryGene, parsedVCFData.variants);
+          // Calculate minGQ for the gene's variants to drive confidence score
           const geneVariants = parsedVCFData.variants.filter((v) => v.gene === primaryGene);
-          const risk = await assessRisk(drug, diplotypeResult.phenotype, primaryGene, geneVariants.length, diplotypeResult.exactMatch);
-          const patientId = `PATIENT_${uuidv4().substring(0, 8).toUpperCase()}`;
+          
+          let minGQ = 60; // Default high confidence if no variants (wildtype)
+          if (geneVariants.length > 0) {
+            // Find minimum GQ among detected variants. strict validation.
+            // If v.gq is undefined (legacy parser), default to 0 to be safe, but our parser now ensures it.
+            const gqValues = geneVariants.map(v => v.gq !== undefined ? v.gq : 0);
+            minGQ = Math.min(...gqValues);
+          } else {
+             // For Wildtype (*1/*1), we rely on the fact that no variants were found.
+             // If coverage was low, we might want to penalize? 
+             // But simpler to assume standard Wildtype confidence unless specific DP check logic exists.
+             // Let's set it to 60 (max) for WT.
+             minGQ = 99;
+          }
+
+
+          const risk = await assessRisk(drug, diplotypeResult.phenotype, primaryGene, geneVariants.length, diplotypeResult.exactMatch, diplotypeResult.diplotype, minGQ);
+          const rawSessionId = uuidv4();
+          const patientId = await anonymizePatientId(rawSessionId);
 
           // Call backend for LLM explanation (phenotype only — no genomic data)
           let explanation;
@@ -132,6 +151,14 @@ export default function SelectDrugPage() {
                 parsedVCFData.variants.length > 0 ? 0.95 : 0.6,
               parse_warnings: parsedVCFData.warnings,
             },
+            // Explicitly set data_source for the UI badge
+            data_source: {
+              cpic_api: risk.data_source?.includes("API") ?? false,
+              cpic_classification: risk.cpic_classification,
+              cpic_implications: risk.cpic_implications,
+              diplotype_exact_match: diplotypeResult.exactMatch,
+              confidence_basis: risk.data_source || "Fallback Cache"
+            }
           };
         })
       );

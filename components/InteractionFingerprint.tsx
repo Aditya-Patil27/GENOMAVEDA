@@ -1,289 +1,288 @@
 "use client";
+import React, { useEffect, useRef, useState } from "react";
+import * as d3 from "d3";
+import { DRUG_GENE_MAP, getGeneForDrug } from "@/lib/drug-registry";
+import { ZoomIn, ZoomOut, RefreshCw, Maximize } from "lucide-react";
 
-import React, { useMemo, useState, useEffect, useRef } from "react";
-import { Network, ZoomIn, ZoomOut } from "lucide-react";
-import edgeData from "@/data/drug-gene-edges.json";
-
-interface InteractionFingerprintProps {
+interface GraphProps {
   selectedDrugs: string[];
   patientPhenotypes: Record<string, string>;
 }
 
-interface NodePos {
-  id: string;
-  type: "drug" | "gene";
-  x: number;
-  y: number;
-  pheno?: string;
-}
-
-interface EdgeLine {
-  from: string;
-  to: string;
-  type: string;
-  weight: number;
-  color: string;
-  shared_gene?: string;
-}
-
-const phenoColors: Record<string, string> = {
-  PM: "#ef4444",
-  IM: "#f59e0b",
-  NM: "#10b981",
-  RM: "#3b82f6",
-  URM: "#8b5cf6",
-  Unknown: "#6b7280",
-};
-
-function getEdgeColor(
-  edge: { type: string; shared_gene?: string },
-  patientPhenotypes: Record<string, string>
-): string {
-  if (edge.type === "competes") {
-    const gene = edge.shared_gene ?? "";
-    const pheno = patientPhenotypes[gene];
-    if (pheno === "PM") return "#ef4444";
-    if (pheno === "IM") return "#f59e0b";
-    return "#4b5563";
-  }
-  return "#334155";
-}
-
-export default function InteractionFingerprint({
-  selectedDrugs,
-  patientPhenotypes,
-}: InteractionFingerprintProps) {
+export default function InteractionFingerprint({ selectedDrugs, patientPhenotypes }: GraphProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
-  // Only show when 2+ drugs selected
-  if (selectedDrugs.length < 2) return null;
+  useEffect(() => {
+    if (!svgRef.current || selectedDrugs.length < 2) return;
 
-  const WIDTH = 600;
-  const HEIGHT = 400;
-  const CX = WIDTH / 2;
-  const CY = HEIGHT / 2;
-
-  // Build nodes and edges for selected drugs
-  const { nodes, edges } = useMemo(() => {
-    const nodeMap = new Map<string, NodePos>();
-    const relevantEdges: EdgeLine[] = [];
-    const drugs = selectedDrugs.map((d) => d.toUpperCase());
-
-    // Collect genes involved
-    const involvedGenes = new Set<string>();
-    const typedEdgeData = edgeData as {
-      edges: Array<{ from: string; to: string; type: string; weight: number; shared_gene?: string }>;
-      nodes: Record<string, { type: string; class?: string }>;
-    };
-
-    typedEdgeData.edges.forEach((e) => {
-      const fromSelected = drugs.includes(e.from);
-      const toSelected = drugs.includes(e.to);
-
-      if (e.type === "metabolized_by" || e.type === "transported_by") {
-        if (fromSelected) {
-          involvedGenes.add(e.to);
-          relevantEdges.push({
-            ...e,
-            color: getEdgeColor(e, patientPhenotypes),
-          });
-        }
-      } else if (e.type === "competes") {
-        if (fromSelected && toSelected) {
-          relevantEdges.push({
-            ...e,
-            color: getEdgeColor(e, patientPhenotypes),
-          });
-        }
-      }
+    // 1. Dynamic Data Generation (No hardcoded JSON!)
+    const activeDrugs = selectedDrugs.map(d => d.toUpperCase());
+    
+    // Identify relevant genes from the selected drugs
+    const relevantGenes = new Set<string>();
+    activeDrugs.forEach(drug => {
+        const gene = getGeneForDrug(drug); // Uses DRUG_GENE_MAP
+        if (gene) relevantGenes.add(gene);
     });
 
-    // Position drug nodes in a circle
-    const allNodes: string[] = [...drugs, ...Array.from(involvedGenes)];
-    const drugCount = drugs.length;
-    const geneArray = Array.from(involvedGenes);
-
-    drugs.forEach((drug, i) => {
-      const angle = (2 * Math.PI * i) / drugCount - Math.PI / 2;
-      const radius = 130;
-      nodeMap.set(drug, {
-        id: drug,
-        type: "drug",
-        x: CX + radius * Math.cos(angle),
-        y: CY + radius * Math.sin(angle),
-      });
-    });
-
-    geneArray.forEach((gene, i) => {
-      const angle = (2 * Math.PI * i) / geneArray.length - Math.PI / 2;
-      const radius = 60;
-      nodeMap.set(gene, {
+    // Build Nodes
+    const geneNodes = Array.from(relevantGenes).map(gene => ({
         id: gene,
-        type: "gene",
-        x: CX + radius * Math.cos(angle),
-        y: CY + radius * Math.sin(angle),
-        pheno: patientPhenotypes[gene],
-      });
+        group: "gene",
+        radius: 20
+    }));
+
+    const drugNodes = activeDrugs.map(drug => ({
+        id: drug,
+        group: "drug",
+        radius: 28
+    }));
+
+    const simNodes = [...geneNodes, ...drugNodes].map(d => ({ ...d }));
+
+    // Build Links
+    const activeLinks: any[] = [];
+    activeDrugs.forEach(drug => {
+        const gene = getGeneForDrug(drug);
+        if (gene && relevantGenes.has(gene)) {
+            activeLinks.push({
+                source: drug, // d3 will map this to node object
+                target: gene,
+                type: "competes", // Default type for visual logic
+                gene: gene // For coloring context
+            });
+        }
     });
 
-    return {
-      nodes: Array.from(nodeMap.values()),
-      edges: relevantEdges,
+    // 2. Setup SVG
+    const width = containerRef.current?.clientWidth || 800;
+    const height = 500;
+    
+    // Clear previous
+    d3.select(svgRef.current).selectAll("*").remove();
+
+    const svg = d3.select(svgRef.current)
+      .attr("viewBox", [0, 0, width, height])
+      .style("background", "linear-gradient(to bottom right, #0f172a, #1e293b)") // Premium dark gradient
+      .attr("class", "cursor-move");
+
+    // Defs for Glow Effects
+    const defs = svg.append("defs");
+    
+    // Glow filter
+    const filter = defs.append("filter")
+      .attr("id", "glow")
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+      
+    filter.append("feGaussianBlur")
+      .attr("stdDeviation", "2.5")
+      .attr("result", "coloredBlur");
+      
+    const feMerge = filter.append("feMerge");
+    feMerge.append("feMergeNode").attr("in", "coloredBlur");
+    feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+    // Gradient for links
+    const linkGradient = defs.append("linearGradient")
+      .attr("id", "link-gradient")
+      .attr("gradientUnits", "userSpaceOnUse");
+      
+    linkGradient.append("stop").attr("offset", "0%").attr("stop-color", "#94a3b8").attr("stop-opacity", 0.2);
+    linkGradient.append("stop").attr("offset", "100%").attr("stop-color", "#2dd4bf").attr("stop-opacity", 0.6);
+
+    // 3. Simulation Setup
+    // Physics tweak: stronger repulsion, more centered
+    const simulation = d3.forceSimulation(simNodes as any)
+      .force("link", d3.forceLink(activeLinks).id((d: any) => d.id).distance(150))
+      .force("charge", d3.forceManyBody().strength(-600))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collide", d3.forceCollide().radius(40).iterations(2));
+
+    // Zoom Behavior
+    const g = svg.append("g");
+    
+    const zoom = d3.zoom()
+      .scaleExtent([0.5, 4])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+        setZoomLevel(event.transform.k);
+      });
+
+    svg.call(zoom as any);
+
+    // 4. Drawing Elements
+    
+    // Risk coloring logic
+    const getEdgeColor = (edge: any) => {
+      const pheno = patientPhenotypes[edge.gene] || "NM";
+      if (edge.type === "competes") {
+        if (pheno === "PM" || pheno === "Poor Metabolizer") return "#ef4444"; // Red
+        if (pheno === "IM" || pheno === "Intermediate Metabolizer") return "#f59e0b"; // Amber
+      }
+      return "#475569"; // Slate 600
     };
-  }, [selectedDrugs, patientPhenotypes, CX, CY]);
+
+    const getEdgeWidth = (edge: any) => {
+      const pheno = patientPhenotypes[edge.gene] || "NM";
+      if (edge.type === "competes" && (pheno === "PM" || pheno === "IM")) return 3;
+      return 1.5;
+    };
+
+    const link = g.append("g")
+      .attr("stroke-opacity", 0.6)
+      .selectAll("line")
+      .data(activeLinks)
+      .join("line")
+      .attr("stroke", d => getEdgeColor(d))
+      .attr("stroke-width", d => getEdgeWidth(d));
+
+    const node = g.append("g")
+      .selectAll("g")
+      .data(simNodes)
+      .join("g")
+      .call(d3.drag()
+        .on("start", (e, d: any) => {
+          if (!e.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        })
+        .on("drag", (e, d: any) => {
+          d.fx = e.x;
+          d.fy = e.y;
+        })
+        .on("end", (e, d: any) => {
+          if (!e.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        }) as any);
+
+    // Node Circles with Glow
+    node.append("circle")
+      .attr("r", (d: any) => d.group === "drug" ? 28 : 20)
+      .attr("fill", (d: any) => d.group === "drug" ? "#0f172a" : "#1e293b") // Dark centers
+      .attr("stroke", (d: any) => d.group === "drug" ? "#2dd4bf" : "#a78bfa") // Teal vs Purple borders
+      .attr("stroke-width", 2.5)
+      .style("filter", "url(#glow)") // Apply glow
+      .style("cursor", "pointer");
+
+    // Node Icons / Text
+    node.append("text")
+      .text((d: any) => d.group === "drug" ? "💊" : "🧬")
+      .attr("dy", 5)
+      .attr("text-anchor", "middle")
+      .attr("font-size", (d: any) => d.group === "drug" ? "20px" : "14px")
+      .style("pointer-events", "none");
+
+    const labels = g.append("g")
+      .selectAll("text")
+      .data(simNodes)
+      .join("text")
+      .text((d: any) => d.id)
+      .attr("font-size", "12px")
+      .attr("font-weight", "600")
+      .attr("fill", "#e2e8f0")
+      .attr("stroke", "#0f172a")
+      .attr("stroke-width", 3)
+      .attr("paint-order", "stroke") // Outline effect for readability
+      .attr("text-anchor", "middle")
+      .attr("dy", (d: any) => d.group === "drug" ? 45 : 35)
+      .style("pointer-events", "none")
+      .style("opacity", 0.9);
+
+    // 5. Simulation Tick
+    simulation.on("tick", () => {
+      link
+        .attr("x1", (d: any) => d.source.x)
+        .attr("y1", (d: any) => d.source.y)
+        .attr("x2", (d: any) => d.target.x)
+        .attr("y2", (d: any) => d.target.y);
+
+      node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+      labels.attr("x", (d: any) => d.x).attr("y", (d: any) => d.y);
+    });
+
+    // 6. Interactions (Hover)
+    node.on("mouseover", (event, d: any) => {
+      // Highlight connected
+      const connected = new Set<string>();
+      connected.add(d.id);
+      activeLinks.forEach((l: any) => {
+        if (l.source.id === d.id) connected.add(l.target.id);
+        if (l.target.id === d.id) connected.add(l.source.id);
+      });
+
+      node.transition().duration(200).style("opacity", (n: any) => connected.has(n.id) ? 1 : 0.2);
+      link.transition().duration(200).style("opacity", (l: any) => 
+        (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.1
+      ).attr("stroke", (l: any) => 
+        (l.source.id === d.id || l.target.id === d.id) ? "#2dd4bf" : getEdgeColor(l)
+      ); // Highlight connection in teal
+      labels.transition().duration(200).style("opacity", (n: any) => connected.has(n.id) ? 1 : 0.2);
+    })
+    .on("mouseout", () => {
+      node.transition().duration(200).style("opacity", 1);
+      link.transition().duration(200).style("opacity", 0.6).attr("stroke", d => getEdgeColor(d));
+      labels.transition().duration(200).style("opacity", 0.9);
+    });
+
+  }, [selectedDrugs, patientPhenotypes]);
+
+  if (selectedDrugs.length < 2) {
+    return (
+      <div className="p-8 border border-dashed border-slate-700 text-slate-400 text-center rounded-xl bg-slate-900/50 flex flex-col items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center">
+            <Maximize className="w-6 h-6 text-slate-500" />
+        </div>
+        <p className="text-sm font-medium">Select 2+ drugs to visualize interaction network</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-4 p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
-      <div className="flex items-center gap-2 mb-3">
-        <Network className="w-4 h-4 text-purple-400" />
-        <h4 className="text-sm font-semibold text-purple-400">
-          Interaction Fingerprint
-        </h4>
-        <span className="ml-auto text-xs text-slate-500 font-mono">
-          patient-specific • genotype-aware
-        </span>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-teal-500 inline-block" />
-          <span className="text-slate-400">Drug</span>
-        </span>
-        {Object.entries(phenoColors).map(([pheno, color]) => (
-          <span key={pheno} className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: color }} />
-            <span className="text-slate-400">{pheno}</span>
-          </span>
-        ))}
-        <span className="flex items-center gap-1">
-          <span className="w-6 h-0.5 bg-red-500 inline-block" />
-          <span className="text-slate-400">High-risk competition</span>
-        </span>
-      </div>
-
-      <div ref={containerRef} className="relative bg-slate-900/60 rounded-lg overflow-hidden border border-slate-700/50">
-        <svg
-          width="100%"
-          height="400"
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          style={{ transform: `scale(${zoom})`, transformOrigin: "center" }}
-        >
-          {/* Edges */}
-          {edges.map((edge, i) => {
-            const fromNode = nodes.find((n) => n.id === edge.from);
-            const toNode = nodes.find((n) => n.id === edge.to);
-            if (!fromNode || !toNode) return null;
-
-            const isDanger = edge.color === "#ef4444";
-            return (
-              <g key={i}>
-                <line
-                  x1={fromNode.x}
-                  y1={fromNode.y}
-                  x2={toNode.x}
-                  y2={toNode.y}
-                  stroke={edge.color}
-                  strokeWidth={edge.weight * 3}
-                  strokeOpacity={isDanger ? 0.8 : 0.4}
-                  strokeDasharray={edge.type === "competes" ? "6,3" : "none"}
-                />
-                {isDanger && (
-                  <line
-                    x1={fromNode.x}
-                    y1={fromNode.y}
-                    x2={toNode.x}
-                    y2={toNode.y}
-                    stroke={edge.color}
-                    strokeWidth={edge.weight * 6}
-                    strokeOpacity={0.15}
-                  />
-                )}
-              </g>
-            );
-          })}
-
-          {/* Nodes */}
-          {nodes.map((node) => {
-            const isGene = node.type === "gene";
-            const r = isGene ? 24 : 30;
-            const fill = isGene
-              ? (phenoColors[node.pheno ?? "Unknown"] ?? "#6b7280")
-              : "#0d9488";
-
-            return (
-              <g key={node.id}>
-                {/* Glow */}
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={r + 6}
-                  fill={fill}
-                  opacity={0.15}
-                />
-                {/* Main circle */}
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={r}
-                  fill={isGene ? "rgba(15,23,42,0.9)" : "rgba(15,23,42,0.9)"}
-                  stroke={fill}
-                  strokeWidth={2}
-                />
-                {/* Label */}
-                <text
-                  x={node.x}
-                  y={node.y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill={fill}
-                  fontSize={isGene ? 9 : 8}
-                  fontWeight={600}
-                  fontFamily="JetBrains Mono, monospace"
-                >
-                  {node.id}
-                </text>
-                {/* Phenotype label below gene */}
-                {isGene && node.pheno && (
-                  <text
-                    x={node.x}
-                    y={node.y + r + 14}
-                    textAnchor="middle"
-                    fill={fill}
-                    fontSize={10}
-                    fontWeight={700}
-                    fontFamily="JetBrains Mono, monospace"
-                  >
-                    {node.pheno}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* Zoom controls */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1">
-          <button
-            onClick={() => setZoom((z) => Math.min(z + 0.2, 2))}
-            className="w-7 h-7 bg-slate-800 border border-slate-600 rounded flex items-center justify-center hover:bg-slate-700 transition-colors"
-          >
-            <ZoomIn className="w-3.5 h-3.5 text-slate-300" />
-          </button>
-          <button
-            onClick={() => setZoom((z) => Math.max(z - 0.2, 0.6))}
-            className="w-7 h-7 bg-slate-800 border border-slate-600 rounded flex items-center justify-center hover:bg-slate-700 transition-colors"
-          >
-            <ZoomOut className="w-3.5 h-3.5 text-slate-300" />
-          </button>
+    <div className="mt-6 border-t border-slate-700 pt-6 animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+            Interaction Fingerprint
+            <span className="text-xs font-normal text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">Live Physics</span>
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">
+            Dynamic force-directed graph showing drug-gene relationships. Drag nodes to rearrange.
+          </p>
+        </div>
+        
+        {/* Legend */}
+        <div className="flex items-center gap-4 text-xs bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700">
+           <div className="flex items-center gap-1.5">
+             <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(45,212,191,0.5)]"></span>
+             <span className="text-slate-300">Drug</span>
+           </div>
+           <div className="flex items-center gap-1.5">
+             <span className="w-2.5 h-2.5 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(167,139,250,0.5)]"></span>
+             <span className="text-slate-300">Gene</span>
+           </div>
+           <div className="flex items-center gap-1.5">
+             <span className="w-8 h-0.5 bg-red-500"></span>
+             <span className="text-slate-300">Risk Interaction</span>
+           </div>
         </div>
       </div>
 
-      <p className="mt-2 text-xs text-slate-500">
-        Dashed lines indicate metabolic competition. Red edges are elevated by your phenotype.
-        Standard tools flag the same interactions for all patients — this graph is specific to your genotype.
-      </p>
+      <div className="relative w-full overflow-hidden rounded-xl border border-slate-700 shadow-2xl bg-slate-900 group" ref={containerRef}>
+        <svg ref={svgRef} className="w-full h-auto touch-none block" style={{ minHeight: '500px' }}></svg>
+        
+        {/* Controls Overlay */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+           <button className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg backdrop-blur border border-slate-600 shadow-lg" title="Reset View">
+              <RefreshCw className="w-4 h-4" onClick={() => { /* reset zoom logic if needed, simplistically handled by re-render or explicit transform reset implies more state */ }} />
+           </button>
+        </div>
+      </div>
     </div>
   );
 }

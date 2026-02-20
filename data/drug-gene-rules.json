@@ -4,7 +4,7 @@
     "rules": {
       "PM": {
         "risk_label": "Ineffective",
-        "severity": "moderate",
+        "severity": "high",
         "confidence": 0.92,
         "recommendation": "Avoid codeine. Poor metabolizers cannot convert codeine to morphine.",
         "dose_adjustment": "Do not use",

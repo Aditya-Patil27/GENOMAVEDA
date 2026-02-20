@@ -20,7 +20,7 @@ export interface DrugInfo {
 // ─── Known Drug→Gene Mappings ───────────────────────────────────
 // These are the original 6 + extended mappings for common CPIC drugs.
 // For drugs not listed here, the gene is determined from CPIC recommendation data.
-const DRUG_GENE_MAP: Record<string, string> = {
+export const DRUG_GENE_MAP: Record<string, string> = {
   codeine: "CYP2D6",
   tramadol: "CYP2D6",
   amitriptyline: "CYP2D6",

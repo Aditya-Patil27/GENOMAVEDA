@@ -16,12 +16,15 @@ import {
   Activity,
   AlertTriangle,
   Download,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import ConfidenceGauge from "./ConfidenceGauge";
 import JsonExporter from "./JsonExporter";
 import FhirExporter from "./FhirExporter";
 import PdfReport from "./PdfReport";
 import GlassBoxPanel from "./GlassBoxPanel";
+import InteractionFingerprint from "./InteractionFingerprint";
 
 interface RiskDashboardProps {
   results: AnalysisResult[];
@@ -106,6 +109,7 @@ function AccordionSection({
 }
 
 function DrugCard({ result, index }: { result: AnalysisResult; index: number }) {
+  const [showPhi, setShowPhi] = useState(false);
   const risk = riskConfig[result.risk_assessment.risk_label] || riskConfig.Unknown;
   const RiskIcon = risk.icon;
 
@@ -156,6 +160,30 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
         <div>
           <p className="text-xs text-slate-400">Gene</p>
           <p className="font-mono text-sm text-slate-200">{result.pharmacogenomic_profile.primary_gene}</p>
+        </div>
+      </div>
+
+      {/* Evidence UI Block (User Fix) */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="border border-slate-700 p-4 rounded bg-slate-800">
+          <p className="text-xs text-slate-400 font-bold mb-1 uppercase">Classification</p>
+          <p className={result.data_source?.diplotype_exact_match ? "text-teal-400 font-bold" : "text-yellow-400 font-bold"}>
+            {result.data_source?.diplotype_exact_match ? "CPIC v1.9" : "N/A"}
+          </p>
+        </div>
+        
+        <div className="border border-slate-700 p-4 rounded bg-slate-800">
+          <p className="text-xs text-slate-400 font-bold mb-1 uppercase">Diplotype Match</p>
+          <p className={result.risk_assessment.confidence_score >= 0.99 ? "text-teal-400 font-bold" : "text-yellow-400 font-bold flex items-center gap-2"}>
+            {result.risk_assessment.confidence_score >= 0.99 ? "Exact Match ✓" : "Inferred ⚠"}
+          </p>
+        </div>
+        
+        <div className="border border-slate-700 p-4 rounded bg-slate-800">
+          <p className="text-xs text-slate-400 font-bold mb-1 uppercase">Data Source</p>
+          <p className={result.data_source?.confidence_basis?.toLowerCase().includes('offline') ? "text-teal-400 font-bold text-xs" : "text-yellow-400 font-bold text-xs"}>
+            {result.data_source?.confidence_basis || "Fallback Cache"} 
+          </p>
         </div>
       </div>
 
@@ -210,38 +238,68 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
         </div>
       </AccordionSection>
 
-      <AccordionSection title="Detected Variants" icon={Dna}>
-        {result.pharmacogenomic_profile.detected_variants.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-slate-400 border-b border-slate-700">
-                  <th className="text-left py-2 px-2 font-medium">rsID</th>
-                  <th className="text-left py-2 px-2 font-medium">Gene</th>
-                  <th className="text-left py-2 px-2 font-medium">Chr</th>
-                  <th className="text-left py-2 px-2 font-medium">Position</th>
-                  <th className="text-left py-2 px-2 font-medium">Star Allele</th>
-                  <th className="text-left py-2 px-2 font-medium">Zygosity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.pharmacogenomic_profile.detected_variants.map((v, i) => (
-                  <tr key={i} className="border-b border-slate-700/50 font-mono">
-                    <td className="py-1.5 px-2 text-teal-400">{v.rsid}</td>
-                    <td className="py-1.5 px-2 text-slate-300">{v.gene}</td>
-                    <td className="py-1.5 px-2 text-slate-400">{v.chromosome}</td>
-                    <td className="py-1.5 px-2 text-slate-400">{v.position.toLocaleString()}</td>
-                    <td className="py-1.5 px-2 text-slate-300">{v.star_allele}</td>
-                    <td className="py-1.5 px-2 text-slate-400">{v.zygosity}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="mt-8 border border-slate-700 rounded-xl overflow-hidden bg-base-900 shadow-sm">
+        <div className="bg-slate-800 p-4 flex justify-between items-center border-b border-slate-700">
+          <div className="flex items-center gap-2">
+             <ShieldAlert className="text-amber-400" size={18} />
+             <span className="font-bold text-slate-100 text-sm">Protected Health Information (PHI)</span>
+          </div>
+          <button 
+            onClick={() => setShowPhi(!showPhi)}
+            className="flex items-center gap-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded transition font-bold border border-slate-600"
+          >
+            {showPhi ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showPhi ? "Hide Raw Genomic Data" : "Clinician Override: Reveal"}
+          </button>
+        </div>
+        
+        {showPhi ? (
+          <div className="p-4 bg-red-500/10 border-l-4 border-red-500/50">
+            <p className="text-xs text-red-400 font-bold mb-3 uppercase tracking-wider flex items-center gap-2">
+              <AlertTriangle size={12} /> Warning: Viewing Identifiable Genomic Data (rsID / Position)
+            </p>
+            
+            {/* EXISTING DETECTED VARIANTS TABLE */}
+            {result.pharmacogenomic_profile.detected_variants.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-slate-400 border-b border-slate-700">
+                      <th className="text-left py-2 px-2 font-medium">rsID</th>
+                      <th className="text-left py-2 px-2 font-medium">Gene</th>
+                      <th className="text-left py-2 px-2 font-medium">Chr</th>
+                      <th className="text-left py-2 px-2 font-medium">Position</th>
+                      <th className="text-left py-2 px-2 font-medium">Star Allele</th>
+                      <th className="text-left py-2 px-2 font-medium">Zygosity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.pharmacogenomic_profile.detected_variants.map((v, i) => (
+                      <tr key={i} className="border-b border-slate-700/50 font-mono">
+                        <td className="py-1.5 px-2 text-teal-400">{v.rsid}</td>
+                        <td className="py-1.5 px-2 text-slate-300">{v.gene}</td>
+                        <td className="py-1.5 px-2 text-slate-400">{v.chromosome}</td>
+                        <td className="py-1.5 px-2 text-slate-400">{v.position.toLocaleString()}</td>
+                        <td className="py-1.5 px-2 text-slate-300">{v.star_allele}</td>
+                        <td className="py-1.5 px-2 text-slate-400">{v.zygosity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-400 text-xs">No variants to display for this drug-gene combination.</p>
+            )}
           </div>
         ) : (
-          <p className="text-slate-400 text-xs">No variants to display for this drug-gene combination.</p>
+          <div className="p-8 text-center bg-slate-900/50">
+            <p className="text-slate-500 text-sm font-mono flex flex-col items-center gap-2">
+              <Shield className="w-8 h-8 text-slate-700" />
+              Raw chromosomal positions, star alleles, and zygosity are masked by default to ensure Edge-Privacy compliance.
+            </p>
+          </div>
         )}
-      </AccordionSection>
+      </div>
 
       <AccordionSection title="Quality Metrics" icon={Activity}>
         <div className="grid grid-cols-2 gap-3 text-xs">
@@ -291,8 +349,109 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
   );
 }
 
+import { buildReportHTML } from "./PdfReport";
+
+// ... (existing imports)
+
 export default function RiskDashboard({ results }: RiskDashboardProps) {
   if (results.length === 0) return null;
+
+  const selectedDrugs = results.map((r) => r.drug);
+  const patientPhenotypes = results.reduce((acc, r) => {
+    acc[r.pharmacogenomic_profile.primary_gene] = r.pharmacogenomic_profile.phenotype;
+    return acc;
+  }, {} as Record<string, string>);
+
+  const handleExportAll = () => {
+    // Generate combined HTML
+    const reportContent = results.map(result => {
+        // Extract body content from the full HTML generated by buildReportHTML
+        // Implementation detail: buildReportHTML returns a full <html> document.
+        // We need to strip the <html>, <head>, <body> tags to concatenate them, 
+        // OR we just write a custom wrapper here.
+        // Copying buildReportHTML logic is cleaner than parsing strings.
+        // Let's rely on a valid assumption: simpler to REUSE the buildReportHTML but we need it to return just the BODY content? 
+        // No, buildReportHTML returns a full doc. 
+        // Let's just create a quick custom aggregator that wraps them.
+        
+        // BETTER APPROACH:
+        // Use a loop to print them one by one? No.
+        // Let's modify buildReportHTML to be more flexible?
+        return ""; 
+    });
+    
+    // Scratch that. Let's write a dedicated "Multi-Report" builder here.
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>PharmaGuard Comprehensive Report</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Inter', sans-serif; color: #1a1a1a; padding: 40px; max-width: 800px; margin: 0 auto; }
+          .page-break { page-break-after: always; display: block; height: 0; margin: 40px 0; border-bottom: 1px dashed #ddd; }
+          @media print { .page-break { border: none; } }
+          /* Reusing styles from PdfReport */
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #00E5CC; padding-bottom: 16px; margin-bottom: 24px; }
+          .header h1 { font-size: 22px; color: #0A0F1E; }
+          .header .badge { font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+          .risk-banner { padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+          .section { margin-bottom: 20px; }
+          .section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #666; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+          .section p { font-size: 13px; line-height: 1.6; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+          .grid-item { background: #f9f9f9; padding: 10px; border-radius: 6px; }
+          .grid-item label { font-size: 10px; text-transform: uppercase; color: #888; display: block; margin-bottom: 2px; }
+          .grid-item .value { font-size: 14px; font-weight: 600; font-family: monospace; }
+        </style>
+      </head>
+      <body>
+        <div style="text-align:center;margin-bottom:60px;padding-top:100px;">
+            <h1 style="font-size:32px;color:#0A0F1E;margin-bottom:16px;">PharmaGuard Comprehensive Analysis</h1>
+            <p style="color:#666;">Generated on ${new Date().toLocaleDateString()}</p>
+            <p style="margin-top:20px;font-size:14px;"><strong>Patient ID:</strong> ${results[0]?.patient_id || "Unknown"}</p>
+            <p style="margin-top:8px;"><strong>Drugs Analyzed:</strong> ${selectedDrugs.join(", ")}</p>
+        </div>
+        <div class="page-break"></div>
+        ${results.map((result) => {
+            const riskColor = result.risk_assessment.risk_label === "Toxic" ? "#FF2D55" : result.risk_assessment.risk_label === "Adjust Dosage" ? "#FFB800" : result.risk_assessment.risk_label === "Safe" ? "#00C896" : "#8B95A8";
+            
+            // Minimal reproduction of PdfReport content
+            return `
+            <div class="header">
+                <div><h1>⚕ Clinical Report: ${result.drug}</h1></div>
+                <div><span class="badge" style="background:${riskColor}20;color:${riskColor};">${result.risk_assessment.risk_label.toUpperCase()}</span></div>
+            </div>
+            <div class="risk-banner" style="background:${riskColor}15;border:2px solid ${riskColor};">
+                <p style="font-size:18px;font-weight:700;color:${riskColor};">${result.clinical_recommendation.primary_recommendation}</p>
+            </div>
+            <div class="section">
+                <h2>Clinical Context</h2>
+                <div class="grid">
+                    <div class="grid-item"><label>Genotype</label><div class="value">${result.pharmacogenomic_profile.diplotype} (${result.pharmacogenomic_profile.phenotype})</div></div>
+                    <div class="grid-item"><label>Dose Adjust</label><div class="value">${result.clinical_recommendation.dose_adjustment}</div></div>
+                    <div class="grid-item"><label>Confidence</label><div class="value">${(result.risk_assessment.confidence_score * 100).toFixed(0)}%</div></div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>AI Explanation</h2>
+                <p>${result.llm_generated_explanation.summary}</p>
+            </div>
+            <div class="page-break"></div>
+            `;
+        }).join("")}
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    if (printWindow) {
+      printWindow.document.write(fullHtml);
+      printWindow.document.close();
+      printWindow.onload = () => { setTimeout(() => printWindow.print(), 500); };
+    }
+  };
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
@@ -301,11 +460,17 @@ export default function RiskDashboard({ results }: RiskDashboardProps) {
           <Shield className="w-5 h-5 text-teal-400" />
           Analysis Complete
         </h2>
-        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors">
+        <button 
+          onClick={handleExportAll}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+        >
           <Download className="w-4 h-4" />
           Export All Reports
         </button>
       </div>
+
+      <InteractionFingerprint selectedDrugs={selectedDrugs} patientPhenotypes={patientPhenotypes} />
+
       <div className="space-y-4">
         {results.map((result, index) => (
           <DrugCard key={`${result.drug}-${index}`} result={result} index={index} />

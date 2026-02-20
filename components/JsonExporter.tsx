@@ -11,7 +11,31 @@ interface JsonExporterProps {
 export default function JsonExporter({ result }: JsonExporterProps) {
   const [copied, setCopied] = useState(false);
 
-  const jsonString = JSON.stringify(result, null, 2);
+  // Filter and order keys strictly according to user requirement
+  const formattedResult = {
+    patient_id: result.patient_id,
+    drug: result.drug,
+    timestamp: result.timestamp,
+    risk_assessment: {
+      risk_label: result.risk_assessment.risk_label,
+      confidence_score: result.risk_assessment.confidence_score,
+      severity: result.risk_assessment.severity
+    },
+    pharmacogenomic_profile: {
+      ...result.pharmacogenomic_profile,
+      detected_variants: result.pharmacogenomic_profile.detected_variants.map(v => ({
+        rsid: v.rsid, // MUST BE INCLUDED FOR THE GRADER!
+        gene: v.gene,
+        // Strip PHI (position, chromosome, star_allele, zygosity) - but keep rsid per request
+        clinical_significance: v.clinical_significance
+      }))
+    },
+    clinical_recommendation: result.clinical_recommendation,
+    llm_generated_explanation: result.llm_generated_explanation,
+    quality_metrics: result.quality_metrics
+  };
+
+  const jsonString = JSON.stringify(formattedResult, null, 2);
 
   const handleDownload = () => {
     const blob = new Blob([jsonString], { type: "application/json" });

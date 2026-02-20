@@ -11,6 +11,8 @@ export interface ParsedVariant {
   star_allele: string;
   clinical_significance: string;
   gt: string;
+  gq: number; // Genotype Quality
+  dp: number; // Read Depth
 }
 
 export interface ParsedVCF {
@@ -75,10 +77,22 @@ export function parseVCF(content: string): ParsedVCF {
       const gene = infoMap["GENE"];
       if (!gene || !TARGET_GENES.has(gene)) continue;
 
-      // Parse GT field
-      const gtIndex = format ? format.split(":").indexOf("GT") : 0;
+      // Parse GT, GQ, DP from FORMAT and SAMPLE fields
+      const formatFields = format ? format.split(":") : [];
       const sampleFields = sample ? sample.split(":") : [];
-      const gt = sampleFields[gtIndex >= 0 ? gtIndex : 0] || "0/0";
+      
+      // Helper to safely get field value
+      const getFieldVal = (key: string): string | undefined => {
+        const idx = formatFields.indexOf(key);
+        return idx >= 0 ? sampleFields[idx] : undefined;
+      };
+
+      const gt = getFieldVal("GT") || "0/0";
+      const gqStr = getFieldVal("GQ");
+      const dpStr = getFieldVal("DP");
+
+      const gq = gqStr ? parseInt(gqStr, 10) : 0;
+      const dp = dpStr ? parseInt(dpStr, 10) : 0;
 
       // Determine zygosity
       const alleles = gt.replace("|", "/").split("/");
@@ -111,6 +125,8 @@ export function parseVCF(content: string): ParsedVCF {
         star_allele: starAllele,
         clinical_significance: starAllele !== "unknown" ? `${starAllele} variant in ${gene}` : `Variant at ${rsid} in ${gene}`,
         gt,
+        gq: isNaN(gq) ? 0 : gq,
+        dp: isNaN(dp) ? 0 : dp
       });
     }
 
