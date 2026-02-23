@@ -1,86 +1,101 @@
-# PharmaGuard: Precision Medicine Algorithm 🧬💊
+# GENOMAVEDA: Precision Medicine Algorithm 🧬💊
 
 **RIFT 2026 HACKATHON — Pharmacogenomics / Explainable AI Track**
-> An AI-powered pharmacogenomic risk prediction system that parses raw genomic data (VCF) to prevent adverse drug reactions.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Built%20With-Next.js-black)](https://nextjs.org)
-[![Privacy](https://img.shields.io/badge/Privacy-Differential%20Privacy%20%CE%B5%3D1.0-blue)](https://privacy.com)
+> An AI-powered pharmacogenomic risk prediction system that parses raw genomic data (VCF) to prevent adverse drug reactions.
 
 ---
 
 ## 🚀 Live Demo & Video
-- **Live Application**: [INSERT_DEPLOYED_URL_HERE]
+
+- **Live Application**: [https://genomaveda.vercel.app/](https://genomaveda.vercel.app/)
 - **Demo Video (LinkedIn)**: [INSERT_LINKEDIN_VIDEO_LINK_HERE]
+
+> **Note:** Video includes hashtags **#RIFT2026 #PharmaGuard #Pharmacogenomics #AIinHealthcare** as per requirements.
 
 ---
 
 ## 📖 Problem Overview
-Adverse drug reactions (ADRs) kill over 100,000 Americans annually. PharmaGuard solves this by bridging the gap between raw genetic data and clinical decision-making.
 
-**Core Features:**
-1.  **VCF Parsing**: Extracts variants for 6 critical genes (CYP2D6, CYP2C19, CYP2C9, SLCO1B1, TPMT, DPYD) locally in the browser.
-2.  **Risk Prediction**: "Honest Confidence" scoring system combining VCF quality (GQ/DP), diplotype certainty, and CPIC guideline alignment.
-3.  **Explainable AI**: LLM-generated clinical explanations with strict PHI exclusion (Privacy Layer 2).
-4.  **Offline Core**: "Bulletproof" fallback engine ensures functionality even without external APIs.
+Adverse drug reactions (ADRs) kill over 100,000 Americans annually. Many of these deaths are preventable through pharmacogenomic testing—analyzing how genetic variants affect drug metabolism. PharmaGuard solves this by bridging the gap between raw genetic data and clinical decision-making through local, privacy-preserving processing.
+
+### Core Features:
+
+1. **VCF Parsing**: Extracts variants for 6 critical genes (CYP2D6, CYP2C19, CYP2C9, SLCO1B1, TPMT, DPYD) locally in the browser.
+2. **Risk Prediction**: "Honest Confidence" scoring system combining VCF quality (GQ/DP), diplotype certainty, and CPIC guideline alignment.
+3. **Explainable AI**: LLM-generated clinical explanations with strict PHI exclusion (Privacy Layer 2).
+4. **Offline Core**: "Bulletproof" fallback engine ensures functionality even without external APIs.
 
 ---
 
 ## 🏗️ Architecture
+
 PharmaGuard employs a **Privacy-First Hybrid Architecture**:
 
-1.  **Client-Side Processing (Layer 1)**: VCF parsing happens entirely in the browser. Raw genomic data **NEVER** leaves the user's device.
-2.  **Privacy Gateway (Layer 2-3)**:
-    -   **Pseudonymization**: Patient IDs are hashed (`SESSION-XXX`) using SHA-256 (Web Crypto API).
-    -   **Prompt Sanitization**: Only phenotype labels (e.g., "CYP2D6 *4/*4") are sent to the LLM. No RSIDs or raw variants.
-3.  **Risk Engine (Layer 4)**:
-    -   **Offline Dictionary**: Hardcoded, validated rules for 6 core drugs (Codeine, Warfarin, etc.).
-    -   **CPIC API**: Dynamic fallback for updated guidelines.
-4.  **Confidence Scorer**: A weighted mathematical model calculating "Honest Confidence" based on read depth and evidence quality.
+1. **Client-Side Processing (Layer 1)**: VCF parsing happens entirely in the browser; raw genomic data **NEVER** leaves the user's device.
+2. **Privacy Gateway (Layer 2-3)**:
+   - **Pseudonymization**: Patient IDs are hashed (`SESSION-XXX`) using SHA-256 (Web Crypto API).
+   - **Prompt Sanitization**: Only phenotype labels (e.g., "CYP2D6 \*4/\*4") are sent to the LLM. No RSIDs or raw variants are transmitted.
+3. **Risk Engine (Layer 4)**:
+   - **Offline Dictionary**: Hardcoded, validated rules for core drugs like Codeine and Warfarin.
+   - **CPIC API**: Dynamic fallback for updated guidelines.
+   - **Confidence Scorer**: A weighted mathematical model applying Differential Privacy (Laplace mechanism, ε=1.0) to confidence scores.
 
 ---
 
 ## 🛠️ Tech Stack
--   **Frontend**: Next.js 14 (App Router), React, TailwindCSS, Lucide Icons.
--   **Visualization**: D3.js (Force-Directed Graph), Framer Motion.
--   **AI/LLM**: Groq (Llama-3 70B) / Gemini Flash 2.0.
--   **Genomics**: Custom VCF Parser (TypeScript), CPIC API Integration.
--   **Security**: Web Crypto API (SHA-256), Differential Privacy logic.
+
+- **Frontend**: Next.js 14 (App Router), React, TailwindCSS, Lucide Icons.
+- **Visualization**: D3.js (Interaction Fingerprint Graph), Framer Motion.
+- **AI/LLM**: Groq (Llama-3 70B) / Gemini Flash 2.0.
+- **Genomics**: Custom TypeScript VCF Parser, gnomAD Population Frequency Integration.
+- **Security**: Web Crypto API (SHA-256), Differential Privacy logic.
 
 ---
 
-## ⚡ Installation
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/YOUR_USERNAME/pharmaguard.git
-    cd pharmaguard
-    ```
+## ⚡ Installation & Setup
 
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-    *Note: If you encounter downstream dependency errors with `npm`, try using `npm install --legacy-peer-deps` or `yarn`.*
+### Prerequisites
 
-3.  **Configure Environment**:
-    Copy `.env.example` to `.env.local` and add your API keys:
-    ```bash
-    cp .env.example .env.local
-    ```
-    *Required keys: `GROQ_API_KEY` or `GEMINI_API_KEY`.*
+- Node.js 18.x or higher
+- API Keys for Groq or Google Gemini
 
-4.  **Run Development Server**:
-    ```bash
-    npm run dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000).
+### Steps
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Aditya-Patil27/pharmaguard.git
+   cd pharmaguard
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+   > *Note: Use `npm install --legacy-peer-deps` if you encounter version conflicts.*
+
+3. **Configure Environment**:
+   Create a `.env.local` file and add your keys:
+   ```bash
+   cp .env.example .env.local
+   ```
+   > *Required keys: `GROQ_API_KEY` or `GEMINI_API_KEY`.*
+
+4. **Run Development Server**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## 📚 API Documentation (Output Schema)
+
 PharmaGuard generates JSON exports strictly adhering to the **RIFT 2026 Schema**.
 
 ### Sample Output (`output.json`)
+
 ```json
 {
   "patient_id": "SESSION-A1B2C3D4",
@@ -103,41 +118,31 @@ PharmaGuard generates JSON exports strictly adhering to the **RIFT 2026 Schema**
       }
     ]
   },
-  "clinical_recommendation": {
-    "primary_recommendation": "Initiate with lower dose...",
-    "dose_adjustment": "Decrease dose by 50%",
-    "recommendation_strength": "strong"
-  },
-  "llm_generated_explanation": {
-    "summary": "Patient is a Poor Metabolizer...",
-    "disclaimer": "AI suggestion only."
-  },
   "quality_metrics": {
     "vcf_parsing_success": true,
-    "variants_detected": 12,
-    "annotation_completeness": 1.0
+    "privacy_audit": {
+      "raw_vcf_retained_on_server": false,
+      "variants_processed_locally": true,
+      "differential_privacy_applied": true
+    }
   }
 }
 ```
 
 ---
 
-## 🧪 Usage Examples
-### 1. Analyzing a Patient
-1.  Navigate to the **Dashboard**.
-2.  Upload a VCF file (Sample files provided in `/public/data`).
-3.  Select a drug (e.g., **Codeine**) from the dropdown.
-4.  View the **Risk Assessment** card and **Interaction Graph**.
+## 🧪 Submission Highlights & Innovation
 
-### 2. Exporting Reports
--   Click the **JSON** button to download the machine-readable report.
--   Click **PDF Report** for a clinician-friendly summary.
+- **Zero-Persistence Mode**: Real-time Privacy Shield UI that tracks data location and auto-clears browser memory.
+- **Drug Alternative Simulator**: Interactive clinical support that ranks safer drug alternatives in real-time.
+- **gnomAD Context**: Contextualizes variants with population frequency data for deeper clinical insight.
+- **Interaction Fingerprint**: A D3-powered network graph showing metabolic pathway sharing specific to the patient's genotype.
 
 ---
 
-## 👥 Team
--   **[Your Name/Team Name]** - Lead Developer & Architect
+## 👥 Team: THE INTERCEPTORS
 
----
-
-*Verified for RIFT 2026 Submission Compliance.* ✅
+- **ADITYA PATIL** — Backend Lead & Team Leader
+- **SURAJ SAHARE** — Solution Architect
+- **NISHIDA DATKAR** — Frontend Lead
+- **SWARA PHIRKE** — Frontend Lead
