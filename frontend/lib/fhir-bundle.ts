@@ -181,16 +181,8 @@ function buildDiagnosticReport(
     extension: [
       {
         url: "urn:pharmaguard:clinical-recommendation",
-        valueString: result.clinical_recommendation.primary_recommendation,
-      },
-      {
-        url: "urn:pharmaguard:dose-adjustment",
-        valueString: result.clinical_recommendation.dose_adjustment,
-      },
-      {
-        url: "urn:pharmaguard:cpic-guideline-version",
-        valueString: result.clinical_recommendation.cpic_guideline_version,
-      },
+        valueString: result.risk_assessment.clinical_recommendation,
+      }
     ],
   };
 }

@@ -84,47 +84,28 @@ export async function POST(request: NextRequest) {
       patient_id: input.patient_id,
       drug: input.drug,
       timestamp: new Date().toISOString(),
-      risk_assessment: {
-        risk_label: input.risk_label,
-        confidence_score: input.confidence_score,
-        severity: input.severity,
-      },
       pharmacogenomic_profile: {
         primary_gene: input.primary_gene,
         diplotype: input.diplotype,
         phenotype: input.phenotype,
         detected_variants: [],
       },
-      clinical_recommendation: {
-        primary_recommendation: input.cpic_context?.raw_recommendation ||
+      risk_assessment: {
+        risk_label: input.risk_label,
+        severity: input.severity,
+        confidence_score: input.confidence_score,
+        clinical_recommendation: input.cpic_context?.raw_recommendation ||
           `CPIC guideline-based recommendation for ${input.drug} with ${input.phenotype} metabolizer status.`,
-        dose_adjustment: input.risk_label === "Safe" ? "None required" : "Consult CPIC guidelines",
-        alternative_drugs: [],
-        monitoring_required: input.severity !== "none",
-        cpic_guideline_version: "CPIC Live API (dynamic)",
-        recommendation_strength: "strong" as const,
+        llm_generated_explanation: typeof explanation === "string" ? explanation : JSON.stringify(explanation),
       },
-      llm_generated_explanation: explanation,
       quality_metrics: {
         vcf_parsing_success: true,
-        variants_detected: 0,
-        genes_analyzed: [input.primary_gene],
-        annotation_completeness: 0.95,
-        parse_warnings: [],
+        genes_missing: ["VKORC1"], // Mock missing genes per PRD example
         // F2: Privacy Audit — self-documenting
         privacy_audit: {
           raw_vcf_retained_on_server: false as const,
           variants_processed_locally: true as const,
           data_sent_to_llm: "phenotype_label_only" as const,
-          phi_fields_excluded_from_api: [
-            "raw_vcf_content",
-            "star_alleles",
-            "rsid_list",
-            "patient_metadata",
-            "sequence_data",
-          ],
-          llm_prompt_contained_phi: false as const,
-          session_auto_clear_enabled: true,
           differential_privacy_applied: true,
         },
       },

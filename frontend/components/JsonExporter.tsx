@@ -19,7 +19,9 @@ export default function JsonExporter({ result }: JsonExporterProps) {
     risk_assessment: {
       risk_label: result.risk_assessment.risk_label,
       confidence_score: result.risk_assessment.confidence_score,
-      severity: result.risk_assessment.severity
+      severity: result.risk_assessment.severity,
+      clinical_recommendation: result.risk_assessment.clinical_recommendation,
+      llm_generated_explanation: result.risk_assessment.llm_generated_explanation
     },
     pharmacogenomic_profile: {
       ...result.pharmacogenomic_profile,
@@ -30,8 +32,6 @@ export default function JsonExporter({ result }: JsonExporterProps) {
         clinical_significance: v.clinical_significance
       }))
     },
-    clinical_recommendation: result.clinical_recommendation,
-    llm_generated_explanation: result.llm_generated_explanation,
     quality_metrics: result.quality_metrics
   };
 

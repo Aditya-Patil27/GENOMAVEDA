@@ -18,6 +18,9 @@ import {
   Download,
   Eye,
   EyeOff,
+  Volume2,
+  Square,
+  Globe2
 } from "lucide-react";
 import ConfidenceGauge from "./ConfidenceGauge";
 import JsonExporter from "./JsonExporter";
@@ -110,8 +113,51 @@ function AccordionSection({
 
 function DrugCard({ result, index }: { result: AnalysisResult; index: number }) {
   const [showPhi, setShowPhi] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [lang, setLang] = useState("en-US");
+  
   const risk = riskConfig[result.risk_assessment.risk_label] || riskConfig.Unknown;
   const RiskIcon = risk.icon;
+
+  const toggleSpeech = () => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+
+    if (isPlaying) {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+    } else {
+      let textToSpeak = "";
+      if (typeof result.risk_assessment.llm_generated_explanation === "string") {
+         textToSpeak = result.risk_assessment.llm_generated_explanation;
+      } else {
+         // Fallback if structured
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         textToSpeak = (result.risk_assessment.llm_generated_explanation as any)?.summary || "No explanation available.";
+      }
+      
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = lang;
+      
+      // Basic language voice mapping if available
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang.includes(lang.split('-')[0]));
+      if (voice) utterance.voice = voice;
+
+      utterance.onend = () => setIsPlaying(false);
+      utterance.onerror = () => setIsPlaying(false);
+      
+      window.speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -190,51 +236,62 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
       {/* Expandable sections — always visible */}
       <AccordionSection title="Clinical Recommendation" icon={Pill} defaultOpen={true}>
         <div className="space-y-2 text-sm">
-          <p className="text-slate-300">{result.clinical_recommendation.primary_recommendation}</p>
+          <p className="text-slate-300">{result.risk_assessment.clinical_recommendation}</p>
           <div className="flex gap-4 flex-wrap mt-2">
-            <div>
-              <span className="text-slate-400 text-xs">Dose Adjustment:</span>
-              <p className="text-slate-300 text-xs">{result.clinical_recommendation.dose_adjustment}</p>
-            </div>
-            {result.clinical_recommendation.alternative_drugs.length > 0 && (
-              <div>
-                <span className="text-slate-400 text-xs">Alternatives:</span>
-                <div className="flex gap-1 mt-1 flex-wrap">
-                  {result.clinical_recommendation.alternative_drugs.map((alt, i) => (
-                    <span key={i} className="px-2 py-0.5 text-xs bg-teal-500/10 text-teal-400 rounded border border-teal-500/30">
-                      {alt}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+             <span className="text-slate-400 text-xs italic">See Drug Alternative Simulator for alternative drug suggestions.</span>
           </div>
-          {result.clinical_recommendation.monitoring_required && (
-            <p className="flex items-center gap-1 text-amber-400 text-xs mt-2">
-              <AlertTriangle className="w-3 h-3" /> Monitoring required
-            </p>
-          )}
         </div>
       </AccordionSection>
 
       <AccordionSection title="AI Clinical Explanation" icon={Brain}>
+        <div className="mb-4 flex items-center gap-3 p-3 bg-slate-800 rounded border border-slate-700">
+          <Globe2 className="w-4 h-4 text-teal-400" />
+          <select 
+            className="bg-transparent text-sm text-slate-200 outline-none border-b border-dashed border-slate-600 focus:border-teal-400 pb-0.5 cursor-pointer"
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+          >
+            <option value="en-US">English (US)</option>
+            <option value="hi-IN">Hindi (India)</option>
+            <option value="ta-IN">Tamil (India)</option>
+            <option value="mr-IN">Marathi (India)</option>
+            <option value="es-ES">Spanish (Spain)</option>
+          </select>
+          <div className="flex-1"></div>
+          <button 
+            onClick={toggleSpeech}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
+              isPlaying ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50" : "bg-teal-500/20 text-teal-400 hover:bg-teal-500/30 border border-teal-500/50"
+            }`}
+          >
+            {isPlaying ? <Square className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+            {isPlaying ? "STOP AUDIO" : "LISTEN"}
+          </button>
+        </div>
+        
         <div className="space-y-3 text-sm text-slate-300">
-          <p>{result.llm_generated_explanation.summary}</p>
-          <div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Biological Mechanism</p>
-            <p className="text-xs">{result.llm_generated_explanation.biological_mechanism}</p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Variant Impact</p>
-            <p className="text-xs">{result.llm_generated_explanation.variant_impact}</p>
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Clinical Context</p>
-            <p className="text-xs">{result.llm_generated_explanation.clinical_context}</p>
-          </div>
-          <p className="text-xs text-slate-500 italic border-t border-slate-700 pt-2">
-            {result.llm_generated_explanation.disclaimer}
-          </p>
+          {typeof result.risk_assessment.llm_generated_explanation === "string" ? (
+             <p className="whitespace-pre-wrap leading-relaxed">{result.risk_assessment.llm_generated_explanation}</p>
+          ) : (
+            <>
+              <p>{(result.risk_assessment.llm_generated_explanation as any).summary}</p>
+              <div>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Biological Mechanism</p>
+                <p className="text-xs">{(result.risk_assessment.llm_generated_explanation as any).biological_mechanism}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Variant Impact</p>
+                <p className="text-xs">{(result.risk_assessment.llm_generated_explanation as any).variant_impact}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Clinical Context</p>
+                <p className="text-xs">{(result.risk_assessment.llm_generated_explanation as any).clinical_context}</p>
+              </div>
+              <p className="text-xs text-slate-500 italic border-t border-slate-700 pt-2">
+                {(result.risk_assessment.llm_generated_explanation as any).disclaimer}
+              </p>
+            </>
+          )}
         </div>
       </AccordionSection>
 
@@ -310,29 +367,11 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
             </p>
           </div>
           <div>
-            <p className="text-slate-400">Variants Detected</p>
-            <p className="text-slate-300">{result.quality_metrics.variants_detected}</p>
-          </div>
-          <div>
-            <p className="text-slate-400">Genes Analyzed</p>
-            <p className="font-mono text-slate-300">
-              {result.quality_metrics.genes_analyzed.join(", ")}
+            <p className="text-slate-400">Missing Genes</p>
+            <p className="text-slate-300 truncate" title={result.quality_metrics.genes_missing?.join(", ")}>
+              {result.quality_metrics.genes_missing?.join(", ") || "None"}
             </p>
           </div>
-          <div>
-            <p className="text-slate-400">Completeness</p>
-            <p className="text-slate-300">
-              {(result.quality_metrics.annotation_completeness * 100).toFixed(0)}%
-            </p>
-          </div>
-          {result.quality_metrics.parse_warnings.length > 0 && (
-            <div className="col-span-2">
-              <p className="text-slate-400 mb-1">Warnings</p>
-              {result.quality_metrics.parse_warnings.map((w, i) => (
-                <p key={i} className="text-amber-400">⚠ {w}</p>
-              ))}
-            </div>
-          )}
         </div>
       </AccordionSection>
 
@@ -424,19 +463,19 @@ export default function RiskDashboard({ results }: RiskDashboardProps) {
                 <div><span class="badge" style="background:${riskColor}20;color:${riskColor};">${result.risk_assessment.risk_label.toUpperCase()}</span></div>
             </div>
             <div class="risk-banner" style="background:${riskColor}15;border:2px solid ${riskColor};">
-                <p style="font-size:18px;font-weight:700;color:${riskColor};">${result.clinical_recommendation.primary_recommendation}</p>
+                <p style="font-size:18px;font-weight:700;color:${riskColor};">${result.risk_assessment.clinical_recommendation}</p>
             </div>
             <div class="section">
                 <h2>Clinical Context</h2>
                 <div class="grid">
                     <div class="grid-item"><label>Genotype</label><div class="value">${result.pharmacogenomic_profile.diplotype} (${result.pharmacogenomic_profile.phenotype})</div></div>
-                    <div class="grid-item"><label>Dose Adjust</label><div class="value">${result.clinical_recommendation.dose_adjustment}</div></div>
                     <div class="grid-item"><label>Confidence</label><div class="value">${(result.risk_assessment.confidence_score * 100).toFixed(0)}%</div></div>
+                    <div class="grid-item"><label>Severity</label><div class="value">${result.risk_assessment.severity.toUpperCase()}</div></div>
                 </div>
             </div>
             <div class="section">
                 <h2>AI Explanation</h2>
-                <p>${result.llm_generated_explanation.summary}</p>
+                <p>${typeof result.risk_assessment.llm_generated_explanation === 'string' ? result.risk_assessment.llm_generated_explanation : (result.risk_assessment.llm_generated_explanation as any).summary}</p>
             </div>
             <div class="page-break"></div>
             `;

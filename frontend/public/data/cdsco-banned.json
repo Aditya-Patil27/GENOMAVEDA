@@ -1,0 +1,30 @@
+{
+  "banned_combinations": [
+    "NIMESULIDE + PARACETAMOL",
+    "CODEINE + CHLORPHENIRAMINE",
+    "CIPROFLOXACIN + TINIDAZOLE",
+    "OFLOXACIN + ORNIDAZOLE"
+  ],
+  "banned_drugs": [
+    "CISAPRIDE",
+    "SIBUTRAMINE",
+    "REMOXIPRIDE",
+    "ROFECOXIB"
+  ],
+  "alternatives": {
+    "CODEINE": [
+      { "drug": "TRAMADOL", "class": "Opioid Analgesic", "cdsco_approved": true, "notes": "Monitor for CYP2D6 interactions as well" },
+      { "drug": "MORPHINE", "class": "Opioid Analgesic", "cdsco_approved": true, "notes": "Requires strict dosage control" },
+      { "drug": "PARACETAMOL + DICLOFENAC", "class": "NSAID Combo", "cdsco_approved": true, "notes": "Non-opioid alternative" }
+    ],
+    "WARFARIN": [
+      { "drug": "APIXABAN", "class": "DOAC", "cdsco_approved": true, "notes": "Less genetic variability, fixed dosing" },
+      { "drug": "RIVAROXABAN", "class": "DOAC", "cdsco_approved": true, "notes": "Once daily dosing, less monitoring required" },
+      { "drug": "DABIGATRAN", "class": "DOAC", "cdsco_approved": true, "notes": "Direct thrombin inhibitor" }
+    ],
+    "CLOPIDOGREL": [
+      { "drug": "PRASUGREL", "class": "P2Y12 Inhibitor", "cdsco_approved": true, "notes": "Not affected by CYP2C19 poor metabolizer status" },
+      { "drug": "TICAGRELOR", "class": "P2Y12 Inhibitor", "cdsco_approved": true, "notes": "Reversible binding, not heavily reliant on CYP2C19" }
+    ]
+  }
+}

@@ -67,43 +67,30 @@ export const AnalysisResultSchema = z.object({
   patient_id: z.string(),
   drug: z.string(),
   timestamp: z.string(),
-  risk_assessment: z.object({
-    risk_label: RiskLabelEnum,
-    confidence_score: z.number().min(0).max(1),
-    severity: SeverityEnum,
-  }),
   pharmacogenomic_profile: z.object({
     primary_gene: z.string(),
     diplotype: z.string(),
-    phenotype: PhenotypeEnum,
+    phenotype: z.string(), // Now strings since there are many phenotypes
     detected_variants: z.array(DetectedVariantSchema),
   }),
-  clinical_recommendation: z.object({
-    primary_recommendation: z.string(),
-    dose_adjustment: z.string(),
-    alternative_drugs: z.array(z.string()),
-    monitoring_required: z.boolean(),
-    cpic_guideline_version: z.string(),
-    recommendation_strength: z.enum(["strong", "moderate", "optional"]),
+  risk_assessment: z.object({
+    risk_label: z.string(),
+    severity: z.string(),
+    confidence_score: z.number().min(0).max(1),
+    clinical_recommendation: z.string(),
+    llm_generated_explanation: z.string(),
   }),
-  llm_generated_explanation: LLMExplanationSchema,
   quality_metrics: z.object({
     vcf_parsing_success: z.boolean(),
-    variants_detected: z.number(),
-    genes_analyzed: z.array(z.string()),
-    annotation_completeness: z.number(),
-    parse_warnings: z.array(z.string()),
-    // F2: Privacy Audit — self-documenting privacy in JSON output
+    genes_missing: z.array(z.string()),
     privacy_audit: z.object({
       raw_vcf_retained_on_server: z.literal(false),
       variants_processed_locally: z.literal(true),
       data_sent_to_llm: z.enum(["phenotype_label_only", "none"]),
-      phi_fields_excluded_from_api: z.array(z.string()),
-      llm_prompt_contained_phi: z.literal(false),
-      session_auto_clear_enabled: z.boolean(),
       differential_privacy_applied: z.boolean(),
     }).optional(),
   }),
+
   // Optional dynamic data source metadata
   data_source: z.object({
     cpic_api: z.boolean(),

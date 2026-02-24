@@ -1,0 +1,59 @@
+{
+  "WARFARIN": {
+    "target_genes": ["CYP2C9", "VKORC1"],
+    "rules": {
+      "CYP2C9": {
+        "Poor Metabolizer": {
+          "severity": "high",
+          "recommendation": "Reduce starting dose by 50% and monitor INR closely."
+        },
+        "Intermediate Metabolizer": {
+          "severity": "medium",
+          "recommendation": "Consider a reduced starting dose."
+        },
+        "Normal Metabolizer": {
+          "severity": "low",
+          "recommendation": "Initiate therapy with standard recommended dose."
+        }
+      }
+    }
+  },
+  "CODEINE": {
+    "target_genes": ["CYP2D6"],
+    "rules": {
+      "CYP2D6": {
+        "Ultrarapid Metabolizer": {
+          "severity": "high",
+          "recommendation": "Avoid codeine use due to potential for toxicity. Use alternative analgesics."
+        },
+        "Poor Metabolizer": {
+          "severity": "medium",
+          "recommendation": "Avoid codeine use due to lack of efficacy. Use alternative analgesics."
+        },
+        "Normal Metabolizer": {
+          "severity": "low",
+          "recommendation": "Initiate therapy with standard recommended dose."
+        }
+      }
+    }
+  },
+  "CLOPIDOGREL": {
+    "target_genes": ["CYP2C19"],
+    "rules": {
+      "CYP2C19": {
+        "Poor Metabolizer": {
+          "severity": "high",
+          "recommendation": "Avoid clopidogrel. Use alternative antiplatelet therapy (e.g., prasugrel, ticagrelor)."
+        },
+        "Intermediate Metabolizer": {
+          "severity": "high",
+          "recommendation": "Avoid clopidogrel. Use alternative antiplatelet therapy if no contraindications."
+        },
+        "Normal Metabolizer": {
+          "severity": "low",
+          "recommendation": "Initiate therapy with standard recommended dose."
+        }
+      }
+    }
+  }
+}

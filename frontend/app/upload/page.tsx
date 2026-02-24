@@ -8,10 +8,22 @@ import Dropzone from "@/components/Dropzone";
 import ProgressIndicator from "@/components/ProgressIndicator";
 import { parseVCF, ParsedVCF } from "@/lib/vcf-parser";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
+import { isPrivateBrowsing, checkEviction, saveToVault } from "@/lib/db";
+import { AlertCircle, FileWarning } from "lucide-react";
 
 export default function UploadPage() {
   const router = useRouter();
   const { setParsedVCFData, setDetectedGenes } = usePharmaGuard();
+  const [isPrivate, setIsPrivate] = React.useState(false);
+  const [evicted, setEvicted] = React.useState(false);
+
+  React.useEffect(() => {
+    isPrivateBrowsing().then(setIsPrivate);
+    checkEviction().then(res => {
+      // If res is false, it might have been evicted or not persisted
+      setEvicted(!res);
+    });
+  }, []);
 
   const handleFileLoaded = useCallback(
     (_content: string, _fileName: string, parsed: ParsedVCF) => {
@@ -20,9 +32,23 @@ export default function UploadPage() {
       // Store in context
       setParsedVCFData(parsed);
       setDetectedGenes(genes);
-
-      // Navigate to drug selection
-      router.push("/select-drug");
+      
+      // Store to IndexedDB vault securely
+      // Extract pseudo-patient ID or formulate one
+      const patientId = "SESSION-" + Math.random().toString(36).substr(2, 8).toUpperCase();
+      
+      const vaultData = {
+        patient_id: patientId,
+        phenotype_profiles: parsed.variants.map(v => ({ gene: v.gene, diplotype: v.star_allele || "*1/*1", phenotype: "Unknown" })) // Mock basic phenotyping
+      };
+      
+      saveToVault(patientId, vaultData).then(() => {
+        // Navigate to drug selection
+        router.push("/select-drug");
+      }).catch(err => {
+        console.error("Vault save failed:", err);
+        router.push("/select-drug");
+      });
     },
     [router, setParsedVCFData, setDetectedGenes]
   );
@@ -89,6 +115,26 @@ export default function UploadPage() {
         <p className="text-sm text-slate-400">
           Precision medicine, decoded. Upload multi-gene VCF sequences to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.
         </p>
+
+        {isPrivate && (
+          <div className="mt-4 flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 animate-pulse">
+            <FileWarning className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold">Private Browsing Detected</p>
+              <p className="text-xs opacity-80">Local storage vault may be disabled or easily cleared. Your genomic phenotype hash may not persist across sessions.</p>
+            </div>
+          </div>
+        )}
+
+        {evicted && !isPrivate && (
+          <div className="mt-4 flex items-start gap-3 p-4 bg-crimson-500/10 border border-crimson-500/30 rounded-lg text-crimson-400">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold">Vault Eviction Detected</p>
+              <p className="text-xs opacity-80">Your previous genomic profile was cleared by your device OS to save space. Please re-initialize the vault by uploading your VCF again.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}

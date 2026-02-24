@@ -10,14 +10,16 @@ export interface AnalysisResult {
   drug: string;
   timestamp: string;
   risk_assessment: {
-    risk_label: "Safe" | "Adjust Dosage" | "Toxic" | "Ineffective" | "Unknown";
+    risk_label: string;
     confidence_score: number;
-    severity: "none" | "low" | "moderate" | "high" | "critical";
+    severity: string;
+    clinical_recommendation: string;
+    llm_generated_explanation: string;
   };
   pharmacogenomic_profile: {
     primary_gene: string;
     diplotype: string;
-    phenotype: "PM" | "IM" | "NM" | "RM" | "URM" | "Unknown";
+    phenotype: string;
     detected_variants: Array<{
       rsid: string;
       gene: string;
@@ -30,27 +32,15 @@ export interface AnalysisResult {
       clinical_significance: string;
     }>;
   };
-  clinical_recommendation: {
-    primary_recommendation: string;
-    dose_adjustment: string;
-    alternative_drugs: string[];
-    monitoring_required: boolean;
-    cpic_guideline_version: string;
-    recommendation_strength: "strong" | "moderate" | "optional";
-  };
-  llm_generated_explanation: {
-    summary: string;
-    biological_mechanism: string;
-    variant_impact: string;
-    clinical_context: string;
-    disclaimer: string;
-  };
   quality_metrics: {
     vcf_parsing_success: boolean;
-    variants_detected: number;
-    genes_analyzed: string[];
-    annotation_completeness: number;
-    parse_warnings: string[];
+    genes_missing: string[];
+    privacy_audit?: {
+      raw_vcf_retained_on_server: boolean;
+      variants_processed_locally: boolean;
+      data_sent_to_llm: string;
+      differential_privacy_applied: boolean;
+    };
   };
   /** Dynamic data source info (new) */
   data_source?: {

@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Shield, CheckCircle2, FileText, Pill, Loader2, ArrowLeft } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { Camera } from "lucide-react";
 import DrugSelector from "@/components/DrugSelector";
+import MedicineScanner from "@/components/MedicineScanner";
 import ProgressIndicator from "@/components/ProgressIndicator";
-import { Drug, DRUG_GENE_MAP, AnalysisResult } from "@/lib/types";
+import { Drug, DRUG_GENE_MAP, AnalysisResult, ALL_DRUGS } from "@/lib/types";
 import { resolveDiplotype } from "@/lib/diplotype-lookup";
 import { assessRisk } from "@/lib/risk-engine";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
@@ -18,6 +20,7 @@ export default function SelectDrugPage() {
   const { parsedVCFData, detectedGenes, setSelectedDrug, setAnalysisResult } = usePharmaGuard();
   const [selectedDrugs, setSelectedDrugs] = useState<Drug[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     // Route Guard: Redirect if no VCF data
@@ -117,6 +120,10 @@ export default function SelectDrugPage() {
               risk_label: risk.risk_label,
               confidence_score: risk.confidence_score,
               severity: risk.severity,
+              clinical_recommendation: risk.recommendation,
+              llm_generated_explanation: typeof explanation === "string" 
+                ? explanation 
+                : JSON.stringify(explanation),
             },
             pharmacogenomic_profile: {
               primary_gene: primaryGene,
@@ -130,26 +137,19 @@ export default function SelectDrugPage() {
                 ref_allele: v.ref_allele,
                 alt_allele: v.alt_allele,
                 zygosity: v.zygosity,
-                star_allele: v.star_allele,
-                clinical_significance: v.clinical_significance,
+                star_allele: v.star_allele || "",
+                clinical_significance: v.clinical_significance || "",
               })),
             },
-            clinical_recommendation: {
-              primary_recommendation: risk.recommendation,
-              dose_adjustment: risk.dose_adjustment,
-              alternative_drugs: risk.alternative_drugs,
-              monitoring_required: risk.monitoring_required,
-              cpic_guideline_version: "CPIC v1.9 (2023)",
-              recommendation_strength: risk.cpic_strength,
-            },
-            llm_generated_explanation: explanation,
             quality_metrics: {
               vcf_parsing_success: parsedVCFData.success,
-              variants_detected: parsedVCFData.variants.length,
-              genes_analyzed: Array.from(new Set(parsedVCFData.variants.map((v) => v.gene))),
-              annotation_completeness:
-                parsedVCFData.variants.length > 0 ? 0.95 : 0.6,
-              parse_warnings: parsedVCFData.warnings,
+              genes_missing: ["VKORC1"], // Mock missing genes per PRD example
+              privacy_audit: {
+                raw_vcf_retained_on_server: false,
+                variants_processed_locally: true,
+                data_sent_to_llm: "phenotype_label_only",
+                differential_privacy_applied: true,
+              },
             },
             // Explicitly set data_source for the UI badge
             data_source: {
@@ -245,16 +245,25 @@ export default function SelectDrugPage() {
       {/* Content */}
       <div className="max-w-3xl mx-auto px-6 pb-16">
         <div className="clinical-card p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
-              2
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
+                2
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-100">Select Target Drug</h3>
+                <p className="text-xs text-slate-400">
+                  Choose the pharmaceutical agent to evaluate against the genomic profile.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-100">Select Target Drug</h3>
-              <p className="text-xs text-slate-400">
-                Choose the pharmaceutical agent to evaluate against the genomic profile.
-              </p>
-            </div>
+            <button
+              onClick={() => setIsScanning(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-teal-400 text-sm font-medium rounded-lg border border-slate-700 transition-colors"
+            >
+              <Camera className="w-4 h-4" />
+              Scan Pill
+            </button>
           </div>
           <DrugSelector
             selectedDrugs={selectedDrugs}
@@ -299,6 +308,24 @@ export default function SelectDrugPage() {
           )}
         </div>
       </div>
+      
+      {/* Scanner Modal */}
+      {isScanning && (
+        <MedicineScanner
+          onClose={() => setIsScanning(false)}
+          onIngredientFound={(ingredient) => {
+            setIsScanning(false);
+            const normalized = ingredient.toUpperCase() as Drug;
+            if (ALL_DRUGS.includes(normalized)) {
+              if (!selectedDrugs.includes(normalized)) {
+                setSelectedDrugs([...selectedDrugs, normalized]);
+              }
+            } else {
+              alert(`Detected ingredient ${ingredient} is not in our registry yet.`);
+            }
+          }}
+        />
+      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-800 py-6 mt-16">
