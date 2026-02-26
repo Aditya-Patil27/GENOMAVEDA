@@ -103,7 +103,7 @@ export default function MedicineScanner({ onIngredientFound, onClose }: Medicine
               audio={false}
               ref={webcamRef}
               screenshotFormat="image/jpeg"
-              videoConstraints={{ facingMode: "user" }}
+              onUserMediaError={(e: any) => setError(e.message || "Camera access denied. Please check site permissions.")}
               className="w-full h-full object-cover opacity-80"
             />
           ) : (

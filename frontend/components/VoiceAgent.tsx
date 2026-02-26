@@ -73,18 +73,18 @@ export default function VoiceAgent() {
       try {
         recognitionRef.current.start();
       } catch (e) {
-        // Fallback for browsers without speech recognition API running properly on local DEV
+        console.warn("Speech API start failed. Activating manual fallback.");
         setTimeout(() => {
-          setTranscript("Run analysis on patient 84920.");
+          setTranscript("Explain the risks of Codeine for a ultra-rapid metabolizer.");
           setAgentState("processing");
-        }, 3000);
+        }, 2000);
       }
     } else {
-      // Direct mock fallback if API missing
+      console.warn("Speech API not found. Activating manual fallback.");
       setTimeout(() => {
-        setTranscript("Run analysis on patient 84920.");
+        setTranscript("Explain the risks of Codeine for a ultra-rapid metabolizer.");
         setAgentState("processing");
-      }, 3000);
+      }, 2000);
     }
   };
 

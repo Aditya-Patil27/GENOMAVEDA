@@ -4,11 +4,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    allowedDevOrigins: [
-      "192.168.137.1"
-    ]
-  },
   headers: async () => [
     {
       source: "/sw.js",

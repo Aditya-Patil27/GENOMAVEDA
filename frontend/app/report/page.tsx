@@ -8,7 +8,7 @@ import RiskDashboard from "@/components/RiskDashboard";
 import ProgressIndicator from "@/components/ProgressIndicator";
 import ProcessingOverlay from "@/components/ProcessingOverlay";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
-import VoiceAgent from "@/components/VoiceAgent";
+import { Bot } from "lucide-react";
 
 export default function ReportPage() {
   const router = useRouter();
@@ -110,11 +110,21 @@ export default function ReportPage() {
           </div>
 
           <RiskDashboard results={analysisResult} />
-        </div>
 
-        {/* Voice Agent AI Section */}
-        <div className="mt-8">
-           <VoiceAgent />
+          <div className="mt-8 flex justify-center border-t border-slate-800 pt-8">
+            <button
+              onClick={() => router.push("/voice")}
+              className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-teal-500/20 to-blue-500/20 hover:from-teal-500/30 hover:to-blue-500/30 border border-teal-500/30 hover:border-teal-500/50 rounded-2xl transition-all group"
+            >
+              <div className="w-10 h-10 rounded-full bg-slate-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Bot className="w-5 h-5 text-teal-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-slate-200 font-semibold leading-tight">Ask GenomIX AI</p>
+                <p className="text-slate-400 text-xs mt-0.5">Immersive Voice Clinical Assistant</p>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
