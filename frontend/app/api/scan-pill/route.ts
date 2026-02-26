@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Groq } from "groq-sdk";
 
 export async function POST(request: Request) {
   try {
@@ -9,20 +9,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY is not set");
+    if (!process.env.GROQ_API_KEY) {
+      console.error("GROQ_API_KEY is not set");
       return NextResponse.json(
         { error: "Vision API not configured" },
         { status: 500 }
       );
     }
 
-    // Initialize Gemini
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Initialize Groq
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     // The image comes as a base64 data URL: "data:image/jpeg;base64,...""
-    const base64Data = image.split(",")[1];
+    const base64Data = image; 
     
     // We request a strict JSON output string to match our needs
     const prompt = `You are an expert pharmacist vision AI. Look at this image of a medicine package/blister pack. 
@@ -32,23 +31,27 @@ Return ONLY a strictly valid JSON object with a single key "ingredient" in ALL C
 If no ingredient can be reliably identified, return {"ingredient": null}.
 Example: {"ingredient": "CODEINE"}`;
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: "image/jpeg"
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: base64Data } }
+          ]
         }
-      }
-    ]);
+      ],
+      temperature: 0,
+      max_tokens: 1024,
+      response_format: { type: "json_object" }
+    });
     
-    const responseText = result.response.text();
+    const responseText = completion.choices[0]?.message?.content || "{}";
     
-    // Strip possible markdown fences
-    const jsonStr = responseText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    
+    // Parse JSON
     try {
-      const parsed = JSON.parse(jsonStr);
+      const parsed = JSON.parse(responseText);
       return NextResponse.json(parsed);
     } catch {
       // Fallback if model didn't output strict JSON

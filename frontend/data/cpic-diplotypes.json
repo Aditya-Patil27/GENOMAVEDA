@@ -1,0 +1,16 @@
+{
+  "diplotypes": [
+    {
+      "gene": "CYP2C19",
+      "diplotype": "*1/*1",
+      "phenotype": "Normal Metabolizer",
+      "activity_score": 2.0
+    },
+    {
+      "gene": "CYP2C19",
+      "diplotype": "*2/*2",
+      "phenotype": "Poor Metabolizer",
+      "activity_score": 0.0
+    }
+  ]
+}

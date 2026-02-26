@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { AnalysisResult } from "@/lib/types";
+import cpicData from "../public/data/cpic-guidelines.json";
 import {
   Shield,
   ShieldAlert,
@@ -28,6 +29,9 @@ import FhirExporter from "./FhirExporter";
 import PdfReport from "./PdfReport";
 import GlassBoxPanel from "./GlassBoxPanel";
 import InteractionFingerprint from "./InteractionFingerprint";
+import DrugAlternativeSimulator from "./DrugAlternativeSimulator";
+import RiskEngineSummaryDashboard from "./RiskEngineSummaryDashboard";
+import RiskEngineExpandedExplainability from "./RiskEngineExpandedExplainability";
 
 interface RiskDashboardProps {
   results: AnalysisResult[];
@@ -111,12 +115,41 @@ function AccordionSection({
   );
 }
 
-function DrugCard({ result, index }: { result: AnalysisResult; index: number }) {
+function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult; index: number; patientPhenotypes: Record<string, string> }) {
   const [showPhi, setShowPhi] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [lang, setLang] = useState("en-US");
   
-  const risk = riskConfig[result.risk_assessment.risk_label] || riskConfig.Unknown;
+  // Dynamically compute risk label and recommendation from cpicData
+  const normalizedDrug = result.drug.toUpperCase();
+  const gene = result.pharmacogenomic_profile.primary_gene;
+  const phenotype = result.pharmacogenomic_profile.phenotype;
+  
+  let dynamicRiskLabel = result.risk_assessment.risk_label as keyof typeof riskConfig;
+  let dynamicRecommendation = result.risk_assessment.clinical_recommendation;
+  let dynamicSeverityColors = severityColors[result.risk_assessment.severity] || severityColors.none;
+  let dynamicSeverity = result.risk_assessment.severity.toUpperCase();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const drugRules = (cpicData as any)[normalizedDrug]?.rules;
+  if (drugRules && drugRules[gene] && drugRules[gene][phenotype]) {
+      const rule = drugRules[gene][phenotype];
+      
+      // Map JSON severity to UI labels
+      if (rule.severity === "high") {
+         dynamicRiskLabel = "Toxic";
+      } else if (rule.severity === "medium") {
+         dynamicRiskLabel = "Adjust Dosage";
+      } else {
+         dynamicRiskLabel = "Safe";
+      }
+      
+      dynamicRecommendation = rule.recommendation;
+      dynamicSeverity = rule.severity.toUpperCase();
+      dynamicSeverityColors = severityColors[rule.severity] || severityColors.none;
+  }
+
+  const risk = riskConfig[dynamicRiskLabel] || riskConfig.Unknown;
   const RiskIcon = risk.icon;
 
   const toggleSpeech = () => {
@@ -184,8 +217,8 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
       <div className="flex items-center gap-6 mb-5">
         <div>
           <p className="text-xs text-slate-400 uppercase tracking-wider">Severity</p>
-          <p className={`font-semibold text-sm mt-1 ${severityColors[result.risk_assessment.severity]}`}>
-            {result.risk_assessment.severity.toUpperCase()}
+          <p className={`font-semibold text-sm mt-1 ${dynamicSeverityColors}`}>
+            {dynamicSeverity}
           </p>
         </div>
         <div className="flex-1">
@@ -236,9 +269,13 @@ function DrugCard({ result, index }: { result: AnalysisResult; index: number }) 
       {/* Expandable sections — always visible */}
       <AccordionSection title="Clinical Recommendation" icon={Pill} defaultOpen={true}>
         <div className="space-y-2 text-sm">
-          <p className="text-slate-300">{result.risk_assessment.clinical_recommendation}</p>
+          <p className="text-slate-300">{dynamicRecommendation}</p>
           <div className="flex gap-4 flex-wrap mt-2">
-             <span className="text-slate-400 text-xs italic">See Drug Alternative Simulator for alternative drug suggestions.</span>
+             <DrugAlternativeSimulator 
+               currentDrug={result.drug} 
+               currentRiskLabel={dynamicRiskLabel} 
+               patientPhenotypes={patientPhenotypes} 
+             />
           </div>
         </div>
       </AccordionSection>
@@ -401,6 +438,9 @@ export default function RiskDashboard({ results }: RiskDashboardProps) {
     return acc;
   }, {} as Record<string, string>);
 
+  const [activeIdx, setActiveIdx] = useState(0);
+  const currentResult = results[activeIdx];
+
   const handleExportAll = () => {
     // Generate combined HTML
     const reportContent = results.map(result => {
@@ -510,10 +550,34 @@ export default function RiskDashboard({ results }: RiskDashboardProps) {
 
       <InteractionFingerprint selectedDrugs={selectedDrugs} patientPhenotypes={patientPhenotypes} />
 
-      <div className="space-y-4">
-        {results.map((result, index) => (
-          <DrugCard key={`${result.drug}-${index}`} result={result} index={index} />
-        ))}
+      {/* Drug Selection Tabs */}
+      {results.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 border-b border-slate-700/50 mb-4">
+          {results.map((res, idx) => (
+             <button
+               key={idx}
+               onClick={() => setActiveIdx(idx)}
+               className={`px-4 py-2 rounded-t-lg transition-colors whitespace-nowrap text-sm font-semibold border-b-2
+                 ${activeIdx === idx 
+                    ? "bg-teal-500/10 text-teal-400 border-teal-500" 
+                    : "text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800"}`}
+             >
+               {res.drug}
+             </button>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-12">
+        <div className="flex flex-col gap-6 pb-12">
+          <RiskEngineSummaryDashboard result={currentResult} />
+          <RiskEngineExpandedExplainability result={currentResult} />
+          <DrugAlternativeSimulator 
+             currentDrug={currentResult.drug} 
+             currentRiskLabel={currentResult.risk_assessment.risk_label} 
+             patientPhenotypes={patientPhenotypes} 
+          />
+        </div>
       </div>
     </div>
   );

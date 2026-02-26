@@ -1,0 +1,11 @@
+{
+  "drug_gene_rules": [
+    {
+      "drug": "Clopidogrel",
+      "gene": "CYP2C19",
+      "rule": "CYP2C19*2 or *3 carriers have reduced active metabolite formation and higher risk of cardiovascular events.",
+      "recommendation": "Consider alternative therapy (e.g., prasugrel, ticagrelor) in poor or intermediate metabolizers.",
+      "evidence_level": "High"
+    }
+  ]
+}

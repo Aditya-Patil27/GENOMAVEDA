@@ -19,6 +19,7 @@ export interface ParsedVCF {
   variants: ParsedVariant[];
   warnings: string[];
   success: boolean;
+  genes_missing?: string[];
 }
 
 const TARGET_GENES = new Set(["CYP2D6", "CYP2C19", "CYP2C9", "SLCO1B1", "TPMT", "DPYD"]);
@@ -138,7 +139,10 @@ export function parseVCF(content: string): ParsedVCF {
       warnings.push("No pharmacogenomic variants detected in target genes");
     }
 
-    return { variants, warnings, success: true };
+    const detectedGenes = new Set(variants.map(v => v.gene));
+    const missingGenes = Array.from(TARGET_GENES).filter(g => !detectedGenes.has(g));
+
+    return { variants, warnings, success: true, genes_missing: missingGenes };
   } catch (error) {
     return {
       variants: [],

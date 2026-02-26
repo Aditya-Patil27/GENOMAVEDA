@@ -8,6 +8,7 @@ import RiskDashboard from "@/components/RiskDashboard";
 import ProgressIndicator from "@/components/ProgressIndicator";
 import ProcessingOverlay from "@/components/ProcessingOverlay";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
+import VoiceAgent from "@/components/VoiceAgent";
 
 export default function ReportPage() {
   const router = useRouter();
@@ -109,6 +110,11 @@ export default function ReportPage() {
           </div>
 
           <RiskDashboard results={analysisResult} />
+        </div>
+
+        {/* Voice Agent AI Section */}
+        <div className="mt-8">
+           <VoiceAgent />
         </div>
       </div>
 

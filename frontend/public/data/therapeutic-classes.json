@@ -1,0 +1,29 @@
+{
+  "classes": {
+    "OPIOID_ANALGESIC": [
+      { "drug": "CODEINE", "class": "Opioid Analgesic" },
+      { "drug": "TRAMADOL", "class": "Opioid Analgesic" },
+      { "drug": "MORPHINE", "class": "Opioid Analgesic" }
+    ],
+    "NSAID": [
+      { "drug": "PARACETAMOL + DICLOFENAC", "class": "NSAID Combo" },
+      { "drug": "IBUPROFEN", "class": "NSAID" }
+    ],
+    "ANTICOAGULANT": [
+      { "drug": "WARFARIN", "class": "VKA" },
+      { "drug": "APIXABAN", "class": "DOAC" },
+      { "drug": "RIVAROXABAN", "class": "DOAC" },
+      { "drug": "DABIGATRAN", "class": "DOAC" }
+    ],
+    "ANTIPLATELET": [
+      { "drug": "CLOPIDOGREL", "class": "P2Y12 Inhibitor" },
+      { "drug": "PRASUGREL", "class": "P2Y12 Inhibitor" },
+      { "drug": "TICAGRELOR", "class": "P2Y12 Inhibitor" }
+    ]
+  },
+  "drug_to_class": {
+    "CODEINE": ["OPIOID_ANALGESIC", "NSAID"],
+    "WARFARIN": ["ANTICOAGULANT"],
+    "CLOPIDOGREL": ["ANTIPLATELET"]
+  }
+}

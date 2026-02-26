@@ -1,0 +1,14 @@
+{
+  "frequencies": [
+    {
+      "gene": "CYP2C19",
+      "allele": "*1",
+      "frequency": 0.85
+    },
+    {
+      "gene": "CYP2C19",
+      "allele": "*2",
+      "frequency": 0.15
+    }
+  ]
+}

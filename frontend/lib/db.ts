@@ -40,9 +40,17 @@ export async function saveToVault(id: string, data: any) {
   // Create a pseudo-hash to represent mathematical hashing as per PRD
   const encoder = new TextEncoder();
   const dataString = JSON.stringify(data);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(dataString));
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  let hashHex = "";
+
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(dataString));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } else {
+    // Fallback for SSR or environments without crypto.subtle
+    const cryptoModule = await import("crypto");
+    hashHex = cryptoModule.createHash("sha256").update(dataString).digest("hex");
+  }
 
   await db.put(STORE_NAME, {
     id,

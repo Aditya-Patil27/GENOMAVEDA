@@ -1,0 +1,53 @@
+{
+  "drug_gene_rules": [
+    {
+      "drug": "Clopidogrel",
+      "gene": "CYP2C19",
+      "rule": "CYP2C19*2 or *3 carriers have reduced active metabolite formation and higher risk of cardiovascular events.",
+      "recommendation": "Consider alternative therapy (e.g., prasugrel, ticagrelor) in poor or intermediate metabolizers.",
+      "evidence_level": "High"
+    },
+    {
+      "drug": "Warfarin",
+      "gene": "VKORC1",
+      "rule": "VKORC1 -1639G>A polymorphism affects warfarin sensitivity. A allele requires lower dose.",
+      "recommendation": "Use pharmacogenetic dosing algorithms incorporating VKORC1 and CYP2C9 genotypes.",
+      "evidence_level": "High"
+    },
+    {
+      "drug": "Warfarin",
+      "gene": "CYP2C9",
+      "rule": "CYP2C9*2 and *3 variants reduce clearance, increasing bleeding risk.",
+      "recommendation": "Lower initial doses for *2 or *3 carriers.",
+      "evidence_level": "High"
+    },
+    {
+      "drug": "Abacavir",
+      "gene": "HLA-B",
+      "rule": "HLA-B*57:01 carriers are at high risk for severe hypersensitivity reaction.",
+      "recommendation": "Screen for HLA-B*57:01 before initiation; do not use if positive.",
+      "evidence_level": "Highest"
+    },
+    {
+      "drug": "Codeine",
+      "gene": "CYP2D6",
+      "rule": "CYP2D6 ultra-rapid metabolizers convert codeine to morphine rapidly, risking toxicity. Poor metabolizers get no relief.",
+      "recommendation": "Avoid codeine in ultra-rapid and poor metabolizers; use alternative analgesics.",
+      "evidence_level": "High"
+    },
+    {
+      "drug": "Simvastatin",
+      "gene": "SLCO1B1",
+      "rule": "SLCO1B1*5 (c.521T>C) is associated with an increased risk of simvastatin-induced myopathy.",
+      "recommendation": "Prescribe a lower dose or alternative statin (e.g., rosuvastatin) for carriers.",
+      "evidence_level": "High"
+    },
+    {
+      "drug": "Carbamazepine",
+      "gene": "HLA-B",
+      "rule": "HLA-B*15:02 is strongly associated with Stevens-Johnson syndrome in Asian populations.",
+      "recommendation": "Screen high-risk populations before use; avoid if positive.",
+      "evidence_level": "Highest"
+    }
+  ]
+}
