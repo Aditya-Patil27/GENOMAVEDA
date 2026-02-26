@@ -32,11 +32,11 @@ We integrate **Groq (Llama-3 70B)** and **Gemini Flash 2.0** to drive an Explain
 
 ### Screenshots
 
-![Risk Dashboard Placeholder](https://via.placeholder.com/800x400?text=Risk+Dashboard+Screenshot)
-*The interactive Risk Dashboard showing actionable drug insights.*
+![GenomiX Voice Agent Dashboard](docs/voice-agent.png)
+*Real-time multimodal GenomiX voice agent ready to analyze patient genomic data.*
 
-![Voice Agent Placeholder](https://via.placeholder.com/800x400?text=Voice+Agent+Screenshot)
-*Real-time multimodal voice agent analyzing scanned medicines.*
+![PharmaGuard Comprehensive Analysis Report](docs/analysis-report.png)
+*Detailed clinical report showing actionable insights and AI-generated explanations for various drugs.*
 
 ---
 
