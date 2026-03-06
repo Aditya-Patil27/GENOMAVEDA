@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Shield, CheckCircle2, FileText, Pill, Loader2, ArrowLeft } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
-import { Camera } from "lucide-react";
 import DrugSelector from "@/components/DrugSelector";
-import MedicineScanner from "@/components/MedicineScanner";
 import ProgressIndicator from "@/components/ProgressIndicator";
 import { Drug, DRUG_GENE_MAP, AnalysisResult, ALL_DRUGS } from "@/lib/types";
 import { resolveDiplotype } from "@/lib/diplotype-lookup";
@@ -20,7 +18,6 @@ export default function SelectDrugPage() {
   const { parsedVCFData, detectedGenes, setSelectedDrug, setAnalysisResult } = usePharmaGuard();
   const [selectedDrugs, setSelectedDrugs] = useState<Drug[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     // Route Guard: Redirect if no VCF data
@@ -35,7 +32,12 @@ export default function SelectDrugPage() {
     setIsAnalyzing(true);
 
     try {
-      const analysisResults: AnalysisResult[] = await Promise.all(
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Analysis timed out — CPIC API may be slow. Please retry.")), 60_000)
+    );
+
+    const analysisResults: AnalysisResult[] = await Promise.race([
+      Promise.all(
         selectedDrugs.map(async (drug) => {
           const primaryGene = DRUG_GENE_MAP[drug];
 
@@ -161,7 +163,9 @@ export default function SelectDrugPage() {
             }
           };
         })
-      );
+      ),
+      timeout,
+    ]);
 
       // Store in context
       setSelectedDrug(selectedDrugs);
@@ -257,13 +261,6 @@ export default function SelectDrugPage() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsScanning(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-teal-400 text-sm font-medium rounded-lg border border-slate-700 transition-colors"
-            >
-              <Camera className="w-4 h-4" />
-              Scan Pill
-            </button>
           </div>
           <DrugSelector
             selectedDrugs={selectedDrugs}
@@ -309,23 +306,6 @@ export default function SelectDrugPage() {
         </div>
       </div>
       
-      {/* Scanner Modal */}
-      {isScanning && (
-        <MedicineScanner
-          onClose={() => setIsScanning(false)}
-          onIngredientFound={(ingredient) => {
-            setIsScanning(false);
-            const normalized = ingredient.toUpperCase() as Drug;
-            if (ALL_DRUGS.includes(normalized)) {
-              if (!selectedDrugs.includes(normalized)) {
-                setSelectedDrugs([...selectedDrugs, normalized]);
-              }
-            } else {
-              alert(`Detected ingredient ${ingredient} is not in our registry yet.`);
-            }
-          }}
-        />
-      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-800 py-6 mt-16">

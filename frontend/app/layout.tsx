@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PharmaGuardProvider } from "@/context/PharmaGuardContext";
 import PlasmaBackground from "@/components/PlasmaBackground";
+import PharmaGuardChatbot from "@/components/PharmaGuardChatbot";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -54,6 +55,7 @@ export default function RootLayout({
 
         <PharmaGuardProvider>
           <div className="relative z-10">{children}</div>
+          <PharmaGuardChatbot />
         </PharmaGuardProvider>
       </body>
     </html>

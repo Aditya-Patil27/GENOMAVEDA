@@ -1,0 +1,35 @@
+# ── Secrets / environment ──────────────────────────
+.env.local
+.env*.local
+frontend/.env.local
+
+# ── Dependencies ───────────────────────────────────
+node_modules/
+frontend/node_modules/
+
+# ── Build outputs ──────────────────────────────────
+.next/
+frontend/.next/
+/build
+/out
+
+# ── Dev artefacts ──────────────────────────────────
+*.tsbuildinfo
+frontend/next-env.d.ts
+
+# ── Large data files ───────────────────────────────
+backend/cpic_db_dump*.sql
+backend/data/
+*.sql
+
+# ── Misc ───────────────────────────────────────────
+.DS_Store
+*.pem
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.yarn/install-state.gz
+.pnp
+.pnp.js
+.vercel
+coverage/

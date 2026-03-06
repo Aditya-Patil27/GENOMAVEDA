@@ -32,6 +32,7 @@ export const AnalyzeRequestSchema = z.object({
     classification: z.string(),
     implications: z.string(),
   }).optional(),
+  genes_missing: z.array(z.string()).optional(),
 }).refine(
   (data) => data.drug === data.drug.toUpperCase(),
   { message: "Drug must be uppercase" }

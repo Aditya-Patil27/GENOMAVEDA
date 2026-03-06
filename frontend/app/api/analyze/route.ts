@@ -1,40 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateExplanation } from "@/lib/llmClient";
 import { AnalyzeRequestSchema, AnalysisResultSchema, BLOCKED_FIELDS } from "@/lib/zodSchemas";
+import { checkRateLimit, getClientIp, CORS_HEADERS } from "@/lib/rate-limit";
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const { allowed, retryAfterMs } = checkRateLimit(ip, "/api/analyze");
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      { status: 429, headers: { ...CORS_HEADERS, "Retry-After": String(Math.ceil(retryAfterMs / 1000)) } }
+    );
+  }
+
   try {
-    // Enforce content type
     const contentType = request.headers.get("content-type");
     if (!contentType?.includes("application/json")) {
       return NextResponse.json(
         { error: "Content-Type must be application/json" },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
-    // Enforce body size (8KB max)
     const bodyText = await request.text();
-    if (bodyText.length > 8192) {
+
+    if (Buffer.byteLength(bodyText, "utf8") > 8192) {
       return NextResponse.json(
         { error: "Request body exceeds 8KB limit" },
-        { status: 400 }
+        { status: 413, headers: CORS_HEADERS }
       );
     }
 
-    const body = JSON.parse(bodyText);
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(bodyText);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400, headers: CORS_HEADERS });
+    }
 
-    // Block genomic data fields
     for (const key of Object.keys(body)) {
       if (BLOCKED_FIELDS.includes(key.toLowerCase())) {
         return NextResponse.json(
           { error: `Field '${key}' is not allowed. Backend does not process genomic data.` },
-          { status: 400 }
+          { status: 400, headers: CORS_HEADERS }
         );
       }
     }
 
-    // Validate request with Zod
     const parseResult = AnalyzeRequestSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json(
@@ -45,15 +61,16 @@ export async function POST(request: NextRequest) {
             message: e.message,
           })),
         },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
     const input = parseResult.data;
 
-    // Generate LLM explanation (with CPIC context injection)
     let explanation;
     let prompt_log;
+    let usedFallback = false;
+
     try {
       const result = await generateExplanation({
         drug: input.drug,
@@ -65,8 +82,10 @@ export async function POST(request: NextRequest) {
       });
       explanation = result.explanation;
       prompt_log = result.prompt_log;
+      usedFallback = result.used_fallback;
     } catch (error) {
-      console.error("[API] LLM call failed, using fallback:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("[analyze] LLM call failed — using fallback:", msg);
       const fb = await import("@/lib/fallbackExplanation");
       explanation = fb.fallbackExplanation({
         drug: input.drug,
@@ -77,9 +96,9 @@ export async function POST(request: NextRequest) {
         cpic_context: input.cpic_context,
       });
       prompt_log = undefined;
+      usedFallback = true;
     }
 
-    // Assemble the full response
     const result = {
       patient_id: input.patient_id,
       drug: input.drug,
@@ -94,14 +113,15 @@ export async function POST(request: NextRequest) {
         risk_label: input.risk_label,
         severity: input.severity,
         confidence_score: input.confidence_score,
-        clinical_recommendation: input.cpic_context?.raw_recommendation ||
+        clinical_recommendation:
+          input.cpic_context?.raw_recommendation ??
           `CPIC guideline-based recommendation for ${input.drug} with ${input.phenotype} metabolizer status.`,
-        llm_generated_explanation: typeof explanation === "string" ? explanation : JSON.stringify(explanation),
+        llm_generated_explanation:
+          typeof explanation === "string" ? explanation : JSON.stringify(explanation),
       },
       quality_metrics: {
         vcf_parsing_success: true,
-        genes_missing: ["VKORC1"], // Mock missing genes per PRD example
-        // F2: Privacy Audit — self-documenting
+        genes_missing: input.genes_missing ?? [],
         privacy_audit: {
           raw_vcf_retained_on_server: false as const,
           variants_processed_locally: true as const,
@@ -109,32 +129,31 @@ export async function POST(request: NextRequest) {
           differential_privacy_applied: true,
         },
       },
-      // F4: Prompt transparency log
       prompt_log,
     };
 
-    // Validate outgoing response with Zod
     const resultValidation = AnalysisResultSchema.safeParse(result);
     if (!resultValidation.success) {
-      console.error("[API] Outgoing Zod validation failed:", resultValidation.error);
+      console.error("[analyze] Outgoing Zod validation failed:", resultValidation.error.errors);
       return NextResponse.json(
-        {
-          error: "Internal schema validation failed",
-          details: resultValidation.error.errors.map((e) => ({
-            field: e.path.join("."),
-            message: e.message,
-          })),
-        },
-        { status: 500 }
+        { error: "Internal schema validation failed" },
+        { status: 500, headers: CORS_HEADERS }
       );
     }
 
-    return NextResponse.json(result);
+    const responseHeaders: Record<string, string> = { ...CORS_HEADERS };
+    if (usedFallback) {
+      responseHeaders["X-Fallback-Used"] = "true";
+      responseHeaders["X-Fallback-Reason"] = "llm-unavailable";
+    }
+
+    return NextResponse.json(result, { headers: responseHeaders });
   } catch (error) {
-    console.error("[API] Unexpected error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[analyze] Unexpected error:", msg);
     return NextResponse.json(
       { error: "Analysis failed. Please check request format." },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }

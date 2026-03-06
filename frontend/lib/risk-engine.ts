@@ -6,6 +6,17 @@ import { PharmaConfidenceScorer } from "./confidence-scorer";
 type Phenotype = "PM" | "IM" | "NM" | "RM" | "URM" | "Unknown";
 type RiskLabel = "Safe" | "Adjust Dosage" | "Toxic" | "Ineffective" | "Unknown";
 type Severity = "none" | "low" | "moderate" | "high" | "critical";
+type FunctionClass = "Normal Function" | "Decreased Function" | "Poor Function";
+type PhenotypeKey = Phenotype | FunctionClass;
+
+interface DrugRule {
+  risk: string;
+  severity: string;
+  recommendation: string;
+}
+
+type DrugRules = { gene: string } & Partial<Record<PhenotypeKey, DrugRule>>;
+type CpicDictionary = Record<string, DrugRules>;
 
 export interface RiskResult {
   risk_label: RiskLabel;
@@ -17,18 +28,21 @@ export interface RiskResult {
   alternative_drugs: string[];
   monitoring_required: boolean;
   cpic_strength: "strong" | "moderate" | "optional";
-  /** Raw CPIC recommendation text (for LLM context injection) */
   cpic_raw_recommendation: string;
-  /** CPIC classification level */
   cpic_classification: string;
-  /** CPIC guideline implications */
   cpic_implications: string;
-  /** Source of valid evidence (e.g. "Live API", "Offline Core") */
   data_source?: string;
 }
 
-// ─── Phenotype Mapping ──────────────────────────────────────────
-// Map our short phenotype codes to strings CPIC uses in lookupkey/phenotypes
+// ─── Constants ────────────────────────────────────────────────────────────────
+/** Confidence penalty when diplotype is inferred (unphased, contains "/") */
+const INFERRED_DIPLOTYPE_CONFIDENCE = 0.92;
+/** Assumed read-depth ratio when only GQ is available */
+const GQ_TO_DP_RATIO = 0.7;
+/** Minimum assumed read depth */
+const MIN_READ_DEPTH = 30;
+
+// ─── Phenotype Mapping ────────────────────────────────────────────────────────
 const PHENOTYPE_CPIC_NAMES: Record<Phenotype, string[]> = {
   PM: ["Poor Metabolizer", "poor metabolizer"],
   IM: ["Intermediate Metabolizer", "intermediate metabolizer"],
@@ -38,8 +52,7 @@ const PHENOTYPE_CPIC_NAMES: Record<Phenotype, string[]> = {
   Unknown: ["Unknown", "Indeterminate"],
 };
 
-// ─── Offline Core Dictionary (Guaranteed Demo Mappings) ──────────────────
-// Master Patch: Frozen, Bulletproof Dictionary
+// ─── Offline Core Dictionary (6-drug guaranteed fallback) ─────────────────────
 const CPIC_DICTIONARY = Object.freeze({
   "CODEINE": Object.freeze({
     "gene": "CYP2D6",
@@ -81,218 +94,187 @@ const CPIC_DICTIONARY = Object.freeze({
     "IM": Object.freeze({ risk: "Adjust Dosage", severity: "high", recommendation: "Reduce starting dose by 50%. Monitor for toxicity." }),
     "PM": Object.freeze({ risk: "Toxic", severity: "critical", recommendation: "Avoid fluorouracil. Use alternative drug." })
   })
-});
+}) satisfies CpicDictionary;
 
-const mapPhenotype = (gene: string, diplotype: string): Phenotype | "Normal Function" | "Decreased Function" | "Poor Function" => {
-    if (gene === "CYP2D6") {
-        if (["*1/*1xN", "*1/*2xN", "*2/*2xN", "*1xN", "*2xN"].some(d => diplotype.includes(d) || diplotype.includes("x"))) return "URM";
-        if (["*1/*1", "*1/*2", "*2/*2"].some(d => diplotype.includes(d))) return "NM";
-        if (["*1/*3", "*1/*4", "*1/*5", "*2/*4", "*2/*5"].some(d => diplotype.includes(d))) return "IM";
-        if (["*3/*4", "*4/*4", "*3/*3", "*4/*5", "*5/*5"].some(d => diplotype.includes(d))) return "PM";
-    } else if (gene === "CYP2C19" || gene === "CYP2C9") {
-        if (["*1/*1"].some(d => diplotype.includes(d))) return "NM";
-        if (["*1/*2", "*1/*3"].some(d => diplotype.includes(d))) return "IM";
-        if (["*2/*2", "*2/*3", "*3/*3"].some(d => diplotype.includes(d))) return "PM";
-    } else if (gene === "SLCO1B1") {
-        if (["*1/*1"].some(d => diplotype.includes(d))) return "Normal Function";
-        if (["*1/*5"].some(d => diplotype.includes(d))) return "Decreased Function";
-        if (["*5/*5"].some(d => diplotype.includes(d))) return "Poor Function";
-    } else if (gene === "TPMT" || gene === "DPYD") {
-        // Generalized logic for other genes in demo
-        if (["*1/*1"].some(d => diplotype.includes(d))) return "NM";
-        if (["*1/*2", "*1/*3", "*1/*3A", "*1/*3C", "*1/*4"].some(d => diplotype.includes(d))) return "IM";
-        if (["*2/*2", "*3/*3", "*3A/*3A", "*2/*3", "*3A/*3C"].some(d => diplotype.includes(d))) return "PM";
-    }
-    return "Unknown" as Phenotype;
+// ─── Singleton scorer (avoid per-call instantiation) ─────────────────────────
+const confidenceScorer = new PharmaConfidenceScorer();
+
+// ─── Phenotype Mapping Logic ──────────────────────────────────────────────────
+const mapPhenotype = (gene: string, diplotype: string): PhenotypeKey => {
+  if (gene === "CYP2D6") {
+    if (["*1/*1xN", "*1/*2xN", "*2/*2xN", "*1xN", "*2xN"].some(d => diplotype.includes(d) || diplotype.includes("x"))) return "URM";
+    if (["*1/*1", "*1/*2", "*2/*2"].some(d => diplotype.includes(d))) return "NM";
+    if (["*1/*3", "*1/*4", "*1/*5", "*2/*4", "*2/*5"].some(d => diplotype.includes(d))) return "IM";
+    if (["*3/*4", "*4/*4", "*3/*3", "*4/*5", "*5/*5"].some(d => diplotype.includes(d))) return "PM";
+  } else if (gene === "CYP2C19" || gene === "CYP2C9") {
+    if (["*1/*1"].some(d => diplotype.includes(d))) return "NM";
+    if (["*1/*2", "*1/*3"].some(d => diplotype.includes(d))) return "IM";
+    if (["*2/*2", "*2/*3", "*3/*3"].some(d => diplotype.includes(d))) return "PM";
+  } else if (gene === "SLCO1B1") {
+    if (["*1/*1"].some(d => diplotype.includes(d))) return "Normal Function";
+    if (["*1/*5"].some(d => diplotype.includes(d))) return "Decreased Function";
+    if (["*5/*5"].some(d => diplotype.includes(d))) return "Poor Function";
+  } else if (gene === "TPMT" || gene === "DPYD") {
+    if (["*1/*1"].some(d => diplotype.includes(d))) return "NM";
+    if (["*1/*2", "*1/*3", "*1/*3A", "*1/*3C", "*1/*4"].some(d => diplotype.includes(d))) return "IM";
+    if (["*2/*2", "*3/*3", "*3A/*3A", "*2/*3", "*3A/*3C"].some(d => diplotype.includes(d))) return "PM";
+  }
+  return "Unknown" as Phenotype;
 };
 
-/**
- * Evaluate risk using the strict Offline Core Dictionary.
- * Used when CPIC API is unavailable or for demo consistency.
- * "Master Patch" logic: Exact keys, confidence penalty.
- */
-function evaluateRiskOffline(drug: string, gene: string, diplotype: string, phenotypeInput: Phenotype): Partial<RiskResult> | null {
+// ─── Offline Risk Evaluation ──────────────────────────────────────────────────
+function evaluateRiskOffline(drug: string, gene: string, diplotype: string): Partial<RiskResult> | null {
   const cleanDrug = String(drug).trim().toUpperCase();
   const cleanGene = String(gene).trim().toUpperCase();
   const cleanDiplotype = String(diplotype).trim();
 
-  // 1. Map Phenotype
   const mappedPhenotype = mapPhenotype(cleanGene, cleanDiplotype);
+  const drugRules: DrugRules | undefined = (CPIC_DICTIONARY as CpicDictionary)[cleanDrug];
 
-  // 2. Lookup in our guaranteed dictionary
-  // @ts-ignore - Index signature mismatch is fine for demo code
-  const drugRules = CPIC_DICTIONARY[cleanDrug];
-  
-  // Calculate Confidence: Penalty for inferred unphased diplotypes (Slash logic)
-  let calculatedConfidence = cleanDiplotype.includes("/") ? 0.92 : 1.0;
+  const confidence = cleanDiplotype.includes("/") ? INFERRED_DIPLOTYPE_CONFIDENCE : 1.0;
 
-  // Use mapped phenotype first, fall back to input if not found? 
-  // mapPhenotype returns "Unknown" if not found.
-  // Codeine *1/*2 maps to NM.
-  
   if (drugRules && drugRules[mappedPhenotype]) {
-      const match = drugRules[mappedPhenotype];
-      return {
-          risk_label: match.risk as RiskLabel,
-          severity: match.severity as Severity,
-          recommendation: match.recommendation,
-          cpic_raw_recommendation: match.recommendation,
-          cpic_strength: "strong",
-          dose_adjustment: match.risk === "Safe" ? "None required" : "See recommendation",
-          alternative_drugs: [],
-          monitoring_required: match.severity !== "none",
-          cpic_classification: "Strong",
-          cpic_implications: "Derived from CPIC Clinical Guideline (Offline Core)",
-          data_source: "CPIC v1.9 (Offline Core)",
-          confidence_score: calculatedConfidence
-      };
+    const match = drugRules[mappedPhenotype]!;
+    return {
+      risk_label: match.risk as RiskLabel,
+      severity: match.severity as Severity,
+      recommendation: match.recommendation,
+      cpic_raw_recommendation: match.recommendation,
+      cpic_strength: "strong",
+      dose_adjustment: match.risk === "Safe" ? "None required" : "See recommendation",
+      alternative_drugs: [],
+      monitoring_required: match.severity !== "none",
+      cpic_classification: "Strong",
+      cpic_implications: "Derived from CPIC Clinical Guideline (Offline Core)",
+      data_source: "CPIC v1.9 (Offline Core)",
+      confidence_score: confidence,
+    };
   }
   return null;
 }
 
-/**
- * Assess drug-gene interaction risk using live CPIC recommendation data.
- * Falls back to static rules if CPIC API is unreachable.
- * NOW INCLUDES: Honest Confidence Scoring.
- */
+// ─── Main Risk Assessment ─────────────────────────────────────────────────────
 export async function assessRisk(
   drug: string,
   phenotype: Phenotype,
   gene: string,
   variantCount: number = 0,
   diplotypeExactMatch: boolean = true,
-  diplotype: string = "", // Added for Offline Core lookup
-  minGQ: number = 60 // Added for Confidence Math (default 60 if unknown)
+  diplotype: string = "",
+  minGQ: number = 60
 ): Promise<RiskResult> {
   const drugUpper = drug.toUpperCase().trim();
 
-  // Look up drug in registry to get drugId
-  const drugInfo = await getDrugInfo(drugUpper);
-  
-  // 1. Try Offline Core Override FIRST (for Demo reliability)
-  const offlineResult = evaluateRiskOffline(drugUpper, gene, diplotype, phenotype);
+  // 1. Try Offline Core FIRST — short-circuits before any network I/O
+  const offlineResult = evaluateRiskOffline(drugUpper, gene, diplotype);
 
-  // 2. Calculate Honest Confidence Score
-  const scorer = new PharmaConfidenceScorer();
-  
-  // Construct evidence object strictly for the scorer
+  // 2. Build confidence evidence object
+  const clampedGQ = Math.max(0, Math.min(minGQ, 99));
   const evidence = {
     vcf: {
-       genotypeQuality: minGQ, // Propagated from VCF (e.g. 99)
-       readDepth: 68,          // Simulation/Fallback default (since we don't pass DP yet)
-       phasing: diplotype.includes("/") ? "none" : "phased", 
-       variants: variantCount > 0 ? [{ alleleFrequency: 0.1 }] : [] // Placeholder
+      genotypeQuality: clampedGQ,
+      readDepth: clampedGQ > 0 ? Math.max(MIN_READ_DEPTH, Math.round(clampedGQ * GQ_TO_DP_RATIO)) : MIN_READ_DEPTH,
+      phasing: diplotype.includes("/") ? "none" : "phased",
+      variants: variantCount > 0 ? [{ alleleFrequency: 0.1 }] : [],
     },
     diplotype: {
-      matchType: diplotypeExactMatch ? "exact" : (diplotype.includes("/") ? "inferred" : "partial")
+      matchType: diplotypeExactMatch ? "exact" : (diplotype.includes("/") ? "inferred" : "partial"),
     },
     cpic: {
-      dataSource: offlineResult?.data_source || "fallback_cache",
-      classification: "Strong" // Assume strong for offline core
+      dataSource: offlineResult?.data_source ?? "fallback_cache",
+      classification: "Strong",
     },
-    gene: gene,
-    variants: [] 
+    gene,
+    variants: [],
   };
 
-  const confidenceResult = scorer.score(evidence);
-  // confidenceResult.score is 0.xx (decimal) - use this!
+  const confidenceResult = confidenceScorer.score(evidence);
 
   if (offlineResult) {
-     return {
-       ...offlineResult,
-       // OVERRIDE with honest score
-       confidence_score: confidenceResult.score,
-       primary_gene: drugInfo?.gene || gene,
-       cpic_implications: "CPIC v1.9 (Offline Core) - Validated Match",
-       data_source: "CPIC v1.9 (Offline Core)",
-       // Ensure we return a full RiskResult
-       risk_label: offlineResult.risk_label!,
-       severity: offlineResult.severity!,
-       recommendation: offlineResult.recommendation!,
-       dose_adjustment: offlineResult.dose_adjustment!,
-       alternative_drugs: offlineResult.alternative_drugs!,
-       monitoring_required: offlineResult.monitoring_required!,
-       cpic_strength: offlineResult.cpic_strength!,
-       cpic_raw_recommendation: offlineResult.cpic_raw_recommendation!,
-       cpic_classification: offlineResult.cpic_classification!,
-     } as RiskResult;
-  }
-  
-  // Handle unknown drug
-  if (!drugInfo || !drugInfo.drugId) {
-     return unknownDrugResult(drugUpper, gene, variantCount, diplotypeExactMatch);
+    return {
+      ...offlineResult,
+      confidence_score: confidenceResult.score,
+      primary_gene: gene,
+      cpic_implications: "CPIC v1.9 (Offline Core) - Validated Match",
+      data_source: "CPIC v1.9 (Offline Core)",
+      risk_label: offlineResult.risk_label!,
+      severity: offlineResult.severity!,
+      recommendation: offlineResult.recommendation!,
+      dose_adjustment: offlineResult.dose_adjustment!,
+      alternative_drugs: offlineResult.alternative_drugs!,
+      monitoring_required: offlineResult.monitoring_required!,
+      cpic_strength: offlineResult.cpic_strength!,
+      cpic_raw_recommendation: offlineResult.cpic_raw_recommendation!,
+      cpic_classification: offlineResult.cpic_classification!,
+    } as RiskResult;
   }
 
-  // Fetch recommendations from CPIC
+  // 3. Online path: look up drug in registry then fetch CPIC recommendations
+  const drugInfo = await getDrugInfo(drugUpper);
+
+  if (!drugInfo?.drugId) {
+    return unknownDrugResult(drugUpper, gene, variantCount, diplotypeExactMatch);
+  }
+
   const recommendations = await getDrugRecommendations(drugInfo.drugId);
 
   if (!recommendations || recommendations.length === 0) {
     return unknownDrugResult(drugUpper, gene, variantCount, diplotypeExactMatch);
   }
 
-  // Find the matching recommendation for this phenotype
   const matchingRec = findMatchingRecommendation(recommendations, phenotype, gene);
 
   if (!matchingRec) {
-    // No specific recommendation for this phenotype — likely safe
     return buildResult({
       drug: drugUpper,
-      gene: drugInfo.gene || gene,
+      gene: drugInfo.gene ?? gene,
       phenotype,
       recommendation: recommendations[0],
       isFallback: true,
       variantCount,
       diplotypeExactMatch,
-      minGQ
+      minGQ: clampedGQ,
     });
   }
 
   return buildResult({
     drug: drugUpper,
-    gene: drugInfo.gene || gene,
+    gene: drugInfo.gene ?? gene,
     phenotype,
     recommendation: matchingRec,
     isFallback: false,
     variantCount,
     diplotypeExactMatch,
-    minGQ
+    minGQ: clampedGQ,
   });
 }
 
-// ─── Recommendation Matching ────────────────────────────────────
-
+// ─── Recommendation Matching ──────────────────────────────────────────────────
 function findMatchingRecommendation(
   recommendations: CpicRecommendation[],
   phenotype: Phenotype,
   gene: string
 ): CpicRecommendation | null {
-  const phenotypeNames = PHENOTYPE_CPIC_NAMES[phenotype] || [];
+  const phenotypeNames = PHENOTYPE_CPIC_NAMES[phenotype] ?? [];
 
-  // Try matching by phenotypes field
   for (const rec of recommendations) {
-    if (rec.phenotypes && rec.phenotypes[gene]) {
+    if (rec.phenotypes?.[gene]) {
       const recPhenotype = rec.phenotypes[gene].toLowerCase();
-      if (phenotypeNames.some((p) => recPhenotype.includes(p.toLowerCase()))) {
-        return rec;
-      }
+      if (phenotypeNames.some((p) => recPhenotype.includes(p.toLowerCase()))) return rec;
     }
   }
 
-  // Try matching by lookupkey
   for (const rec of recommendations) {
-    if (rec.lookupkey && rec.lookupkey[gene]) {
+    if (rec.lookupkey?.[gene]) {
       const lookupVal = rec.lookupkey[gene].toLowerCase();
-      if (phenotypeNames.some((p) => lookupVal.includes(p.toLowerCase()))) {
-        return rec;
-      }
+      if (phenotypeNames.some((p) => lookupVal.includes(p.toLowerCase()))) return rec;
     }
   }
 
   return null;
 }
 
-// ─── Result Building ────────────────────────────────────────────
-
+// ─── Result Building ──────────────────────────────────────────────────────────
 interface BuildResultInput {
   drug: string;
   gene: string;
@@ -306,27 +288,21 @@ interface BuildResultInput {
 
 function buildResult(input: BuildResultInput): RiskResult {
   const rec = input.recommendation;
-  const classification = rec.classification || "Optional";
+  const classification = rec.classification ?? "Optional";
   const strength = classificationToStrength(classification);
-
-  // Derive risk label from recommendation text
   const riskLabel = deriveRiskLabel(rec.drugrecommendation, input.phenotype);
   const severity = deriveSeverity(riskLabel, classification);
 
-  // Evidence-based confidence
   const confidenceFactors: ConfidenceFactors = {
     cpicClassification: classification,
     variantCount: input.variantCount,
     diplotypeExactMatch: input.diplotypeExactMatch,
     starAlleleResolved: true,
-    minGQ: (input as any).minGQ // Cast to access the extra field we passed via closure or argue
+    minGQ: input.minGQ,
   };
   const confidence = calculateConfidence(confidenceFactors);
 
-  // Extract implications text
-  const implications = rec.implications
-    ? Object.values(rec.implications).join("; ")
-    : "";
+  const implications = rec.implications ? Object.values(rec.implications).join("; ") : "";
 
   return {
     risk_label: riskLabel,
@@ -335,9 +311,7 @@ function buildResult(input: BuildResultInput): RiskResult {
     primary_gene: input.gene,
     recommendation: rec.drugrecommendation,
     dose_adjustment: deriveDoseAdjustment(rec.drugrecommendation, riskLabel),
-    alternative_drugs: rec.alternatedrugavailable
-      ? ["Consult CPIC guideline for alternatives"]
-      : [],
+    alternative_drugs: rec.alternatedrugavailable ? ["Consult CPIC guideline for alternatives"] : [],
     monitoring_required: severity !== "none",
     cpic_strength: strength,
     cpic_raw_recommendation: rec.drugrecommendation,
@@ -347,12 +321,10 @@ function buildResult(input: BuildResultInput): RiskResult {
   };
 }
 
-// ─── Risk Derivation ────────────────────────────────────────────
-
+// ─── Risk Derivation ──────────────────────────────────────────────────────────
 function deriveRiskLabel(recommendation: string, phenotype: Phenotype): RiskLabel {
   const lower = recommendation.toLowerCase();
 
-  // Toxic / Contraindicated patterns
   if (
     lower.includes("contraindicated") ||
     lower.includes("not recommended") ||
@@ -360,17 +332,10 @@ function deriveRiskLabel(recommendation: string, phenotype: Phenotype): RiskLabe
     lower.includes("toxicity") ||
     lower.includes("serious toxicity")
   ) {
-    // Distinguish between toxic (too much effect) and ineffective (too little)
-    if (phenotype === "PM" || lower.includes("ineffective") || lower.includes("reduced")) {
-      return "Ineffective";
-    }
-    if (phenotype === "URM" || phenotype === "RM") {
-      return "Toxic";
-    }
+    if (phenotype === "PM" || lower.includes("ineffective") || lower.includes("reduced")) return "Ineffective";
     return "Toxic";
   }
 
-  // Dose adjustment patterns
   if (
     lower.includes("reduce") ||
     lower.includes("decrease") ||
@@ -382,7 +347,6 @@ function deriveRiskLabel(recommendation: string, phenotype: Phenotype): RiskLabe
     return "Adjust Dosage";
   }
 
-  // Safe patterns
   if (
     lower.includes("standard") ||
     lower.includes("per standard") ||
@@ -397,36 +361,26 @@ function deriveRiskLabel(recommendation: string, phenotype: Phenotype): RiskLabe
 
 function deriveSeverity(riskLabel: RiskLabel, classification: string): Severity {
   const isStrong = classification.toLowerCase() === "strong";
-
   switch (riskLabel) {
-    case "Toxic":
-      return isStrong ? "critical" : "high";
-    case "Ineffective":
-      return isStrong ? "high" : "moderate";
-    case "Adjust Dosage":
-      return isStrong ? "moderate" : "low";
-    case "Safe":
-      return "none";
-    default:
-      return "low";
+    case "Toxic":      return isStrong ? "critical" : "high";
+    case "Ineffective": return isStrong ? "high" : "moderate";
+    case "Adjust Dosage": return isStrong ? "moderate" : "low";
+    case "Safe":       return "none";
+    default:           return "low";
   }
 }
 
 function deriveDoseAdjustment(recommendation: string, riskLabel: RiskLabel): string {
   if (riskLabel === "Safe") return "None required";
-
   const lower = recommendation.toLowerCase();
-  if (lower.includes("contraindicated") || lower.includes("not recommended") || lower.includes("avoid")) {
-    return "CONTRAINDICATED — Do not use";
-  }
+  if (lower.includes("contraindicated") || lower.includes("not recommended") || lower.includes("avoid")) return "CONTRAINDICATED — Do not use";
   if (lower.includes("reduce")) return "Reduce dose per CPIC guideline";
   if (lower.includes("increase")) return "Increase dose per CPIC guideline";
   if (lower.includes("consider")) return "Consider alternative per CPIC guideline";
   return "Consult CPIC guideline";
 }
 
-// ─── Unknown Drug Fallback ──────────────────────────────────────
-
+// ─── Unknown Drug Fallback ────────────────────────────────────────────────────
 function unknownDrugResult(
   drug: string,
   gene: string,
@@ -444,7 +398,7 @@ function unknownDrugResult(
     }),
     primary_gene: gene || "Unknown",
     recommendation: `${drug} is not in the current CPIC guideline database. Consult a clinical pharmacist for guidance.`,
-    dose_adjustment: "Unknown",
+    dose_adjustment: "Unknown — consult pharmacist",
     alternative_drugs: [],
     monitoring_required: true,
     cpic_strength: "optional",

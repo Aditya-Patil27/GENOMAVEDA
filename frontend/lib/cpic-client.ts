@@ -150,7 +150,7 @@ export async function getDrugRecommendations(
 ): Promise<CpicRecommendation[]> {
   const cacheKey = `cpic:recommendation:${drugId}`;
   const cached = getCached<CpicRecommendation[]>(cacheKey);
-  if (cached) return cached;
+  if (cached !== null && cached !== undefined) return cached;
 
   try {
     const data = await cpicFetch<CpicRecommendation[]>(
@@ -163,13 +163,7 @@ export async function getDrugRecommendations(
     console.warn(`[CPIC] API failed for drug ${drugId}, using static fallback`, error);
     
     // Fallback using local JSON
-    const drugKey = Object.keys(STATIC_DRUG_RULES).find(k => 
-      (STATIC_DRUG_RULES as any)[k].drugId === drugId || 
-      k.toUpperCase() === drugId.toUpperCase() ||
-      // Try matching by checking if the drugId contains the name (e.g. RxNorm lookup)
-      // This is imperfect but good for a demo fallback
-      true
-    );
+    // Resolve drugId → static drug key via the explicit ID map below
 
     // Better fallback: Iterate relevant drugs in STATIC_DRUG_RULES
     // Since we don't have a direct ID map here, we'll return ALL rules that match the ID if possible, 
@@ -213,7 +207,7 @@ export async function getDrugRecommendations(
           phenotype === "URM" ? "Ultrarapid Metabolizer" : "Unknown";
 
         fallbackRecs.push({
-          id: Math.random(),
+          id: fallbackRecs.length + 1,
           guidelineid: 0,
           drugid: drugId,
           implications: {},
