@@ -85,6 +85,20 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
                           <p><strong>Mechanism:</strong> {(result.risk_assessment.llm_generated_explanation as any).biological_mechanism}</p>
                           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                           <p><strong>Impact:</strong> {(result.risk_assessment.llm_generated_explanation as any).variant_impact}</p>
+                          
+                          {/* SAFE ALTERNATIVES DISPLAY */}
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          {(result.risk_assessment.llm_generated_explanation as any).safe_alternatives?.length > 0 && (
+                            <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                              <p className="font-bold text-emerald-400 font-mono tracking-widest uppercase text-xs mb-2">Smart Alternatives (Feedback Loop)</p>
+                              <ul className="list-disc pl-5 space-y-1">
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                {((result.risk_assessment.llm_generated_explanation as any).safe_alternatives as string[]).map((alt, idx) => (
+                                  <li key={idx} className="text-emerald-200/90">{alt}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

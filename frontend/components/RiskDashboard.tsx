@@ -324,6 +324,19 @@ function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult
                 <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Clinical Context</p>
                 <p className="text-xs">{(result.risk_assessment.llm_generated_explanation as any).clinical_context}</p>
               </div>
+
+              {/* SAFE ALTERNATIVES */}
+              {(result.risk_assessment.llm_generated_explanation as any).safe_alternatives?.length > 0 && (
+                <div className="mt-4 p-3 border border-emerald-500/20 bg-emerald-500/10 rounded">
+                  <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-2">Recommended Safe Alternatives</p>
+                  <ul className="list-disc pl-4 text-xs text-emerald-200 space-y-1 font-medium">
+                    {((result.risk_assessment.llm_generated_explanation as any).safe_alternatives as string[]).map((alt, i) => (
+                      <li key={i}>{alt}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <p className="text-xs text-slate-500 italic border-t border-slate-700 pt-2">
                 {(result.risk_assessment.llm_generated_explanation as any).disclaimer}
               </p>

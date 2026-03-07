@@ -12,10 +12,10 @@ const groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const LLM_TIMEOUT_MS = 10_000;
 
 const SYSTEM_PROMPT_WITH_CONTEXT =
-  "You are a clinical pharmacogenomics AI. You have been provided with LIVE CPIC guideline data — ground your response in that data, not your training knowledge. Return only valid JSON with exactly 5 keys: summary, biological_mechanism, variant_impact, clinical_context, disclaimer.";
+  "You are a clinical pharmacogenomics AI. You have been provided with LIVE CPIC guideline data — ground your response in that data, not your training knowledge. Return only valid JSON with exactly 6 keys: summary, biological_mechanism, variant_impact, clinical_context, safe_alternatives, disclaimer.";
 
 const SYSTEM_PROMPT_NO_CONTEXT =
-  "You are a clinical pharmacogenomics AI. Return only valid JSON with exactly 5 keys: summary, biological_mechanism, variant_impact, clinical_context, disclaimer.";
+  "You are a clinical pharmacogenomics AI. Return only valid JSON with exactly 6 keys: summary, biological_mechanism, variant_impact, clinical_context, safe_alternatives, disclaimer.";
 
 function getSystemPrompt(input: ExplainerInput): string {
   return input.cpic_context ? SYSTEM_PROMPT_WITH_CONTEXT : SYSTEM_PROMPT_NO_CONTEXT;
@@ -41,20 +41,25 @@ IMPORTANT: Base your explanation on the EXACT guideline data above, not your tra
       ? `CRITICAL: If the phenotype is NM (Normal Metabolizer), you MUST NOT use phrases like "altered rate" or "compared to normal metabolizers". The patient IS a normal metabolizer. Describe normal function as normal.`
       : "CRITICAL INSTRUCTION: Explain how this specific phenotype alters standard metabolism based strictly on CPIC guidelines.";
 
+  const alternativesInjection = input.risk_label === "High Risk" 
+    ? "\nCRITICAL: The patient is High Risk. You MUST identify 1 or 2 alternative medications in the same therapeutic class that bypass this specific metabolic pathway, and explain why they are safer."
+    : "\nCRITICAL: If the patient is elevated or high risk, suggest alternatives. Otherwise, state that the current medication is genetically optimal.";
+
   return `Pharmacogenomics analysis for CPIC-aligned clinical system.
 Drug: ${input.drug} | Gene: ${input.gene}
 Phenotype: ${input.phenotype} (${PHENOTYPE_LABELS[input.phenotype] ?? "Unknown"})
 Risk: ${input.risk_label}
 ${guidelineContext}
 
-${antiHallucinationInjection}
+${antiHallucinationInjection}${alternativesInjection}
 
-Return JSON with EXACTLY these 5 keys, nothing else:
+Return JSON with EXACTLY these 6 keys, nothing else:
 {
   "summary": "2-3 sentence patient-friendly explanation",
-  "biological_mechanism": "How variants affect enzyme function and drug metabolism (2-3 sentences)",
+  "biological_mechanism": "How variants affect enzyme function and drug metabolism",
   "variant_impact": "Specific impact of this diplotype on enzyme activity",
   "clinical_context": "Clinical significance for treatment planning per CPIC guidelines",
+  "safe_alternatives": ["Alternative Drug 1 (Reason it bypasses pathway)", "Alternative Drug 2..."],
   "disclaimer": "This is AI-generated clinical decision support only. All treatment decisions require qualified healthcare provider review."
 }`.trim();
 }
@@ -140,6 +145,7 @@ const REQUIRED_KEYS = [
   "biological_mechanism",
   "variant_impact",
   "clinical_context",
+  "safe_alternatives",
   "disclaimer",
 ] as const;
 

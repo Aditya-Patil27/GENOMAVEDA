@@ -57,6 +57,7 @@ export interface LLMExplanation {
   biological_mechanism: string;
   variant_impact: string;
   clinical_context: string;
+  safe_alternatives: string[];
   disclaimer: string;
 }
 

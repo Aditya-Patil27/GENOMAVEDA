@@ -3,13 +3,18 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Shield, CheckCircle2, FileText, Beaker, Database, ArrowLeft } from "lucide-react";
+import { Shield, CheckCircle2, FileText, Beaker, Database, ArrowLeft, Search, Map, Activity } from "lucide-react";
 import SyntheticVcfGenerator from "@/components/SyntheticVcfGenerator";
 import CpicEvidenceExplorer from "@/components/CpicEvidenceExplorer";
+import VusDiscovery from "@/components/VusDiscovery";
+import PopulationHeatmap from "@/components/PopulationHeatmap";
+import RweFeedbackLoop from "@/components/RweFeedbackLoop";
+
+type TabKey = "vcf" | "evidence" | "vus" | "heatmap" | "rwe";
 
 export default function ResearcherPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"vcf" | "evidence">("vcf");
+  const [activeTab, setActiveTab] = useState<TabKey>("vcf");
 
   return (
     <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm">
@@ -70,11 +75,11 @@ export default function ResearcherPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 border-b border-slate-700 mb-8">
+        <div className="flex items-center gap-1 border-b border-slate-700 mb-8 overflow-x-auto pb-1">
           <button
             onClick={() => setActiveTab("vcf")}
             className={`
-              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors
+              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
               ${activeTab === "vcf"
                 ? "border-teal-500 text-teal-400 bg-teal-500/5"
                 : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
@@ -82,12 +87,55 @@ export default function ResearcherPage() {
             `}
           >
             <Beaker className="w-4 h-4" />
-            Synthetic VCF Generator
+            Synthetic Cohorts
           </button>
+          
+          <button
+            onClick={() => setActiveTab("vus")}
+            className={`
+              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === "vus"
+                ? "border-purple-500 text-purple-400 bg-purple-500/5"
+                : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
+              }
+            `}
+          >
+            <Search className="w-4 h-4" />
+            VUS Discovery
+          </button>
+
+          <button
+            onClick={() => setActiveTab("heatmap")}
+            className={`
+              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === "heatmap"
+                ? "border-blue-500 text-blue-400 bg-blue-500/5"
+                : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
+              }
+            `}
+          >
+            <Map className="w-4 h-4" />
+            Population Heatmap
+          </button>
+
+          <button
+            onClick={() => setActiveTab("rwe")}
+            className={`
+              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === "rwe"
+                ? "border-emerald-500 text-emerald-400 bg-emerald-500/5"
+                : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
+              }
+            `}
+          >
+            <Activity className="w-4 h-4" />
+            RWE Feedback
+          </button>
+
           <button
             onClick={() => setActiveTab("evidence")}
             className={`
-              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors
+              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
               ${activeTab === "evidence"
                 ? "border-amber-500 text-amber-400 bg-amber-500/5"
                 : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
@@ -95,21 +143,17 @@ export default function ResearcherPage() {
             `}
           >
             <Database className="w-4 h-4" />
-            CPIC Evidence Explorer
+            CPIC Guidelines
           </button>
         </div>
 
         {/* Tab Content */}
         <div className="min-h-[500px]">
-          {activeTab === "vcf" ? (
-            <div className="animate-fade-in">
-              <SyntheticVcfGenerator />
-            </div>
-          ) : (
-            <div className="animate-fade-in">
-              <CpicEvidenceExplorer />
-            </div>
-          )}
+          {activeTab === "vcf" && <div className="animate-fade-in"><SyntheticVcfGenerator /></div>}
+          {activeTab === "vus" && <div className="animate-fade-in"><VusDiscovery /></div>}
+          {activeTab === "heatmap" && <div className="animate-fade-in"><PopulationHeatmap /></div>}
+          {activeTab === "rwe" && <div className="animate-fade-in"><RweFeedbackLoop /></div>}
+          {activeTab === "evidence" && <div className="animate-fade-in"><CpicEvidenceExplorer /></div>}
         </div>
 
       </div>

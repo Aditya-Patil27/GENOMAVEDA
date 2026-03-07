@@ -104,7 +104,22 @@ export function buildReportHTML(result: AnalysisResult): string {
 
   <div class="section">
     <h2>AI Clinical Explanation</h2>
-    <p>${expl}</p>
+    ${typeof expl === "string" ? `<p>${expl}</p>` : `
+      <p style="margin-bottom:8px;"><strong>Summary:</strong> ${(expl as any).summary}</p>
+      <p style="margin-bottom:8px;"><strong>Biological Mechanism:</strong> ${(expl as any).biological_mechanism}</p>
+      <p style="margin-bottom:8px;"><strong>Variant Impact:</strong> ${(expl as any).variant_impact}</p>
+      <p style="margin-bottom:8px;"><strong>Clinical Context:</strong> ${(expl as any).clinical_context}</p>
+      
+      ${(expl as any).safe_alternatives && (expl as any).safe_alternatives.length > 0 ? `
+      <div style="margin-top:16px;padding:12px;background:#E6F9F0;border-left:4px solid #00C896;border-radius:4px;">
+        <p style="color:#008A64;font-size:12px;font-weight:700;text-transform:uppercase;margin-bottom:8px;">Recommended Safe Alternatives (Feedback Loop)</p>
+        <ul style="margin-left:20px;font-size:13px;color:#1A1A1A;">
+          ${(expl as any).safe_alternatives.map((alt: string) => `<li style="margin-bottom:4px;">${alt}</li>`).join("")}
+        </ul>
+      </div>
+      ` : ""}
+      <p style="font-size:11px;color:#888;font-style:italic;margin-top:12px;border-top:1px solid #eee;padding-top:8px;">${(expl as any).disclaimer}</p>
+    `}
   </div>
 
   <div class="section">
