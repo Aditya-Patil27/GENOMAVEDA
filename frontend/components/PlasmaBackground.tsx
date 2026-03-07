@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-// @ts-expect-error - OGL does not have type definitions
 import { Renderer, Program, Mesh, Triangle } from "ogl";
 
 const hexToRgb = (hex: string): number[] => {

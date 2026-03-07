@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateExplanation } from "@/lib/llmClient";
 import { AnalyzeRequestSchema, AnalysisResultSchema, BLOCKED_FIELDS } from "@/lib/zodSchemas";
 import { checkRateLimit, getClientIp, CORS_HEADERS } from "@/lib/rate-limit";
+import { buildFHIRBundle } from "@/lib/fhir-builder";
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -145,6 +146,17 @@ export async function POST(request: NextRequest) {
     if (usedFallback) {
       responseHeaders["X-Fallback-Used"] = "true";
       responseHeaders["X-Fallback-Reason"] = "llm-unavailable";
+    }
+
+    const format = request.nextUrl.searchParams.get("format");
+    const acceptHeader = request.headers.get("accept");
+    const wantsFHIR = format === "fhir" || acceptHeader?.includes("application/fhir+json");
+
+    if (wantsFHIR) {
+      const fhirBundle = buildFHIRBundle(result);
+      // Set correct content type for FHIR JSON
+      responseHeaders["Content-Type"] = "application/fhir+json";
+      return new NextResponse(JSON.stringify(fhirBundle), { headers: responseHeaders });
     }
 
     return NextResponse.json(result, { headers: responseHeaders });

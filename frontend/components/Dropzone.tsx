@@ -34,7 +34,7 @@ export default function Dropzone({ onFileLoaded, parseVCF }: DropzoneProps) {
   }, [isParsing]);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], rejectedFiles: { file: File; errors: { message: string }[] }[]) => {
+    (acceptedFiles: File[], rejectedFiles: { file: File; errors: readonly { message: string; code: string }[] }[]) => {
       setError(null);
       setParseResult(null);
 
@@ -48,13 +48,13 @@ export default function Dropzone({ onFileLoaded, parseVCF }: DropzoneProps) {
 
       const file = acceptedFiles[0];
 
-      if (!file.name.toLowerCase().endsWith(".vcf")) {
-        setError("Invalid file type. Only .vcf files are accepted.");
+      if (!file.name.toLowerCase().endsWith(".vcf") && !file.name.toLowerCase().endsWith(".txt") && !file.name.toLowerCase().endsWith(".csv")) {
+        setError("Invalid file type. Only .vcf, .txt, or .csv files are accepted.");
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        setError("File exceeds 5MB limit. Please use a smaller VCF file.");
+      if (file.size > 25 * 1024 * 1024) {
+        setError("File exceeds 25MB limit. Please use a smaller file.");
         return;
       }
 
@@ -90,9 +90,10 @@ export default function Dropzone({ onFileLoaded, parseVCF }: DropzoneProps) {
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
-    accept: { "text/plain": [".vcf"] },
+    accept: { "text/plain": [".vcf", ".txt", ".csv"] },
     maxFiles: 1,
-    maxSize: 5 * 1024 * 1024,
+    maxSize: 25 * 1024 * 1024,
+
     noClick: true, // We have a custom button, but the whole area can still be active
   });
 
@@ -252,7 +253,7 @@ export default function Dropzone({ onFileLoaded, parseVCF }: DropzoneProps) {
               <div className="flex flex-col items-center gap-3 text-center">
                 <h1 className="text-slate-100 text-3xl md:text-4xl font-bold tracking-tight">{isDragActive ? "Drop to Ingest Data" : "Upload Genomic Data"}</h1>
                 <p className="text-slate-400 text-base max-w-[480px] font-light">
-                  Drag & drop <span className="text-[#13b6ec] font-mono text-sm bg-[#13b6ec]/10 px-1 py-0.5 rounded">.vcf</span> files to initialize sequence analysis.
+                  Drag & drop <span className="text-[#13b6ec] font-mono text-sm bg-[#13b6ec]/10 px-1 py-0.5 rounded">.vcf</span>, <span className="text-[#13b6ec] font-mono text-sm bg-[#13b6ec]/10 px-1 py-0.5 rounded">.txt</span> (23andMe) files to initialize sequence analysis.
                 </p>
               </div>
               

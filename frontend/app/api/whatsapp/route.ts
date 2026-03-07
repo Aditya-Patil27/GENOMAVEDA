@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { Groq } from "groq-sdk";
 import { checkRateLimit, getClientIp, CORS_HEADERS } from "@/lib/rate-limit";
+import { resolveToGeneric } from "@/lib/rxnorm";
+
 
 // Static client — initialised once at module load
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -214,10 +216,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });
       }
 
+      // Try resolving brand name to generic active ingredient
+      const genericDrug = await resolveToGeneric(drug);
+      const identifiedText = genericDrug 
+        ? `💊 *${drug}* identified (Active Ingredient: *${genericDrug}*)!\n\n`
+        : `💊 *${drug}* identified!\n\n`;
+      
+      const searchTarget = genericDrug || drug;
+
       const explanation = await getChatReply(
-        `The medicine package shows the active ingredient: ${drug}. Explain its pharmacogenomic relevance — which genes affect its metabolism, what metabolizer types should be cautious, and CPIC guideline summary. End by suggesting the user visit GenomaVeda for a full genomic risk report.`
+        `The medicine package shows the active ingredient: ${searchTarget}. Explain its pharmacogenomic relevance — which genes affect its metabolism, what metabolizer types should be cautious, and CPIC guideline summary. End by suggesting the user visit GenomaVeda for a full genomic risk report.`
       );
-      await sendWhatsAppReply(from, `💊 *${drug}* identified!\n\n${explanation}`);
+      await sendWhatsAppReply(from, `${identifiedText}${explanation}`);
     } else if (msgType === "text") {
       const text = ((msg.text as Record<string, string> | undefined)?.body ?? "").trim();
       if (!text) return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });

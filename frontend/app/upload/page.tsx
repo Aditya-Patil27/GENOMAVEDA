@@ -38,8 +38,9 @@ export default function UploadPage() {
       const patientId = "SESSION-" + Math.random().toString(36).substr(2, 8).toUpperCase();
       
       const vaultData = {
+        type: "vcf_session" as const,
         patient_id: patientId,
-        phenotype_profiles: parsed.variants.map(v => ({ gene: v.gene, diplotype: v.star_allele || "*1/*1", phenotype: "Unknown" })) // Mock basic phenotyping
+        phenotype_profiles: parsed.variants.map(v => ({ gene: v.gene, diplotype: v.star_allele || "*1/*1", phenotype: "Unknown" }))
       };
       
       saveToVault(patientId, vaultData).then(() => {
@@ -113,7 +114,7 @@ export default function UploadPage() {
           Pharmacogenomic Risk Assessment Platform
         </h2>
         <p className="text-sm text-slate-400">
-          Precision medicine, decoded. Upload multi-gene VCF sequences to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.
+          Precision medicine, decoded. Upload VCF sequences or 23andMe/AncestryDNA raw data to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.
         </p>
 
         {isPrivate && (
@@ -145,10 +146,11 @@ export default function UploadPage() {
               1
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-100">Upload VCF File</h3>
+              <h3 className="text-lg font-semibold text-slate-100">Upload Genomic Data</h3>
               <p className="text-xs text-slate-400">
-                Standard Variant Call Format (.vcf) file containing patient genotype data.
+                Standard Variant Call Format (.vcf) or Consumer DNA text files (23andMe, AncestryDNA).
               </p>
+
             </div>
           </div>
           <Dropzone onFileLoaded={handleFileLoaded} parseVCF={parseVCF} />

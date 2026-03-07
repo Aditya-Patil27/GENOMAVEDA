@@ -10,7 +10,7 @@ export interface AlleleFreqData {
   clinical_note: string;
 }
 
-const freqDB = alleleFrequencies as Record<string, AlleleFreqData>;
+const freqDB = alleleFrequencies as unknown as Record<string, AlleleFreqData>;
 
 /**
  * Look up gnomAD allele frequency data for a given rsID.

@@ -6,7 +6,9 @@ import { openDB, DBSchema, IDBPDatabase } from "idb";
 export type VaultData =
   | { type: "phenotype"; gene: string; diplotype: string; phenotype: string }
   | { type: "analysis_result"; drug: string; risk_label: string; confidence_score: number }
-  | { type: "vcf_summary"; variant_count: number; genes_detected: string[] };
+  | { type: "vcf_summary"; variant_count: number; genes_detected: string[] }
+  | { type: "vcf_session"; patient_id: string; phenotype_profiles: { gene: string; diplotype: string; phenotype: string }[] };
+
 
 interface VaultRecord {
   id: string;

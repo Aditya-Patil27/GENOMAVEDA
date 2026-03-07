@@ -15,9 +15,10 @@ interface PdfReportProps {
 export function buildReportHTML(result: AnalysisResult): string {
   const profile = result.pharmacogenomic_profile;
   const risk = result.risk_assessment;
-  const rec = result.clinical_recommendation;
-  const expl = result.llm_generated_explanation;
-  const ds = result.data_source;
+  // clinical_recommendation and llm_generated_explanation are strings on risk_assessment
+  const rec = risk.clinical_recommendation;
+  const expl = risk.llm_generated_explanation;
+  const ds = result.data_source; // optional, correct path per AnalysisResult type
 
   const riskColor =
     risk.risk_label === "Toxic"
@@ -28,18 +29,20 @@ export function buildReportHTML(result: AnalysisResult): string {
       ? "#00C896"
       : "#8B95A8";
 
-  const variantsHTML = profile.detected_variants.length > 0
-    ? `<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;">
+  const variantsHTML =
+    profile.detected_variants.length > 0
+      ? `<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;">
         <tr style="background:#f5f5f5;"><th style="padding:6px;text-align:left;border:1px solid #ddd;">Gene</th><th style="padding:6px;text-align:left;border:1px solid #ddd;">Clinical Significance</th><th style="padding:6px;text-align:center;border:1px solid #ddd;">Privacy Status</th></tr>
-        ${profile.detected_variants.map(v => `
-          <tr><td style="padding:5px;border:1px solid #ddd;">${v.gene}</td><td style="padding:5px;border:1px solid #ddd;">${v.clinical_significance || "Variant Detected"}</td><td style="padding:5px;border:1px solid #ddd;font-family:monospace;text-align:center;color:#00A87D;">MASKED</td></tr>
-        `).join("")}
+        ${profile.detected_variants
+          .map(
+            (v) => `<tr><td style="padding:5px;border:1px solid #ddd;">${v.gene}</td><td style="padding:5px;border:1px solid #ddd;">${v.clinical_significance || "Variant Detected"}</td><td style="padding:5px;border:1px solid #ddd;font-family:monospace;text-align:center;color:#00A87D;">MASKED</td></tr>`
+          )
+          .join("")}
        </table>
        <p style="font-size:10px;color:#999;margin-top:4px;">* Raw genomic data (rsID, Position, Star Allele) masked for privacy.</p>`
-    : "<p style='color:#999;font-size:11px;'>No variants detected for this gene.</p>";
+      : "<p style='color:#999;font-size:11px;'>No variants detected for this gene.</p>";
 
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
   <title>PharmaGuard Clinical Report — ${result.drug}</title>
@@ -96,17 +99,12 @@ export function buildReportHTML(result: AnalysisResult): string {
 
   <div class="section">
     <h2>Clinical Recommendation</h2>
-    <p><strong>${rec.primary_recommendation}</strong></p>
-    <p style="margin-top:6px;font-size:12px;"><strong>Dose Adjustment:</strong> ${rec.dose_adjustment}</p>
-    ${rec.alternative_drugs.length > 0 ? `<p style="margin-top:4px;font-size:12px;"><strong>Alternatives:</strong> ${rec.alternative_drugs.join(", ")}</p>` : ""}
-    <p style="margin-top:4px;font-size:11px;color:#888;">CPIC Guideline: ${rec.cpic_guideline_version} | Strength: ${rec.recommendation_strength}</p>
+    <p>${rec}</p>
   </div>
 
   <div class="section">
     <h2>AI Clinical Explanation</h2>
-    <p>${expl.summary}</p>
-    <p style="margin-top:8px;font-size:12px;"><strong>Biological Mechanism:</strong> ${expl.biological_mechanism}</p>
-    <p style="margin-top:6px;font-size:12px;"><strong>Clinical Context:</strong> ${expl.clinical_context}</p>
+    <p>${expl}</p>
   </div>
 
   <div class="section">
@@ -114,14 +112,14 @@ export function buildReportHTML(result: AnalysisResult): string {
     <div class="grid">
       <div class="grid-item"><label>Data Source</label><div class="value" style="font-size:11px;">${ds?.cpic_api ? "Live CPIC API" : "Cached"}</div></div>
       <div class="grid-item"><label>Classification</label><div class="value" style="font-size:11px;">${ds?.cpic_classification || "N/A"}</div></div>
-      <div class="grid-item"><label>Diplotype Match</label><div class="value" style="font-size:11px;">${ds?.diplotype_exact_match ? "Exact ✓" : "Inferred"}</div></div>
+      <div class="grid-item"><label>Diplotype Match</label><div class="value" style="font-size:11px;">${ds?.diplotype_exact_match ? "Exact \u2713" : "Inferred"}</div></div>
     </div>
   </div>
 
   <div class="footer">
     <p><strong>PharmaGuard</strong> — RIFT 2026 Hackathon | Team Antigravity | Pharmacogenomics / Explainable AI Track</p>
-    <p style="margin-top:4px;">This report is AI-generated clinical decision support using live CPIC guideline data. All treatment decisions require qualified healthcare provider review.</p>
-    <p style="margin-top:4px;">Generated: ${new Date().toISOString()} | ${expl.disclaimer}</p>
+    <p style="margin-top:4px;">This report is AI-generated clinical decision support. All treatment decisions require qualified healthcare provider review.</p>
+    <p style="margin-top:4px;">Generated: ${new Date().toISOString()}</p>
   </div>
 </body>
 </html>`;

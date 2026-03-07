@@ -76,6 +76,15 @@ export function resolveRsidToStar(rsid: string, gene: string): string {
 }
 
 /**
+ * Find the primary gene associated with a given rsID.
+ * Useful for 23andMe files that provide rsIDs but not the Gene name.
+ */
+export function getGeneForRsid(rsid: string): string | null {
+  const match = Object.keys(RSID_STAR_MAP).find((key) => key.startsWith(`${rsid}:`));
+  return match ? match.split(":")[1] : null;
+}
+
+/**
  * Check whether a given rsID is in a pharmacogenomically relevant gene.
  * Useful for filtering VCF variants before attempting resolution.
  */
