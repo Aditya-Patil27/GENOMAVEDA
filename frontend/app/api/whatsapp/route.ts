@@ -14,6 +14,14 @@ Keep answers concise (under 300 words) and easy to read on mobile.
 Always recommend consulting a pharmacist or physician for clinical decisions.
 If a user sends a medicine image, you will receive the identified drug name and should explain its pharmacogenomic relevance.`;
 
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+const userSessions = new Map<string, ChatMessage[]>();
+const MAX_HISTORY = 10;
+
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB — WhatsApp images can be large
 
 function verifyMetaSignature(rawBody: string, signature: string | null): boolean {
@@ -127,20 +135,55 @@ Return ONLY valid JSON: {"ingredient": "DRUG_NAME"} in ALL CAPS, or {"ingredient
   }
 }
 
-async function getChatReply(userMessage: string): Promise<string> {
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      { role: "system", content: PHARMA_SYSTEM_PROMPT },
-      { role: "user", content: userMessage.slice(0, 1000) },
-    ],
-    temperature: 0.4,
-    max_tokens: 400,
-  });
-  return (
-    completion.choices[0]?.message?.content ??
-    "Sorry, I couldn't process your question. Please try again."
-  );
+async function getChatReply(from: string, userMessage: string): Promise<string> {
+  const sarvamApiKey = process.env.SARVAM_API_KEY || "";
+  if (!sarvamApiKey) {
+    console.warn("[whatsapp] SARVAM_API_KEY is not set. Chat will likely fail.");
+  }
+
+  let history = userSessions.get(from) || [];
+  if (history.length === 0) {
+    history.push({ role: "system", content: PHARMA_SYSTEM_PROMPT });
+  }
+
+  history.push({ role: "user", content: userMessage.slice(0, 1000) });
+
+  if (history.length > MAX_HISTORY) {
+    // Keep index 0 (system), and slice the end
+    history = [history[0], ...history.slice(-(MAX_HISTORY - 1))];
+  }
+
+  try {
+    const res = await fetch("https://api.sarvam.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-subscription-key": sarvamApiKey
+      },
+      body: JSON.stringify({
+        model: "sarvam-m",
+        messages: history,
+        temperature: 0.4,
+        max_tokens: 400
+      })
+    });
+
+    if (!res.ok) {
+      console.error("[whatsapp] Sarvam API error:", await res.text());
+      return "Sorry, I couldn't process your question right now. (API Error)";
+    }
+
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process your question.";
+    
+    history.push({ role: "assistant", content: reply });
+    userSessions.set(from, history);
+
+    return reply;
+  } catch (error) {
+    console.error("[whatsapp] Error calling Sarvam AI:", error);
+    return "Sorry, I ran into an error processing your query.";
+  }
 }
 
 export async function GET(request: Request) {
@@ -224,14 +267,14 @@ export async function POST(request: Request) {
       
       const searchTarget = genericDrug || drug;
 
-      const explanation = await getChatReply(
+      const explanation = await getChatReply(from, 
         `The medicine package shows the active ingredient: ${searchTarget}. Explain its pharmacogenomic relevance — which genes affect its metabolism, what metabolizer types should be cautious, and CPIC guideline summary. End by suggesting the user visit GenomaVeda for a full genomic risk report.`
       );
       await sendWhatsAppReply(from, `${identifiedText}${explanation}`);
     } else if (msgType === "text") {
       const text = ((msg.text as Record<string, string> | undefined)?.body ?? "").trim();
       if (!text) return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });
-      const reply = await getChatReply(text);
+      const reply = await getChatReply(from, text);
       await sendWhatsAppReply(from, reply);
     } else {
       await sendWhatsAppReply(
