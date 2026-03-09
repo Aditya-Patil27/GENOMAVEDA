@@ -23,17 +23,17 @@ export default function ResearcherPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push("/")}>
+            <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push("/")}>
               <Image
                 src="/assets/image/logo.png"
                 alt="GenomaVeda Logo"
-                width={48}
-                height={48}
+                width={60}
+                height={60}
                 className="object-contain"
               />
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
-                <p className="text-xs text-teal-400 font-medium">RESEARCHER SANDBOX</p>
+                <h1 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h1>
+                <p className="text-[10px] tracking-wider text-teal-400 font-medium uppercase mt-0.5">RESEARCHER SANDBOX</p>
               </div>
             </div>
 
@@ -89,7 +89,7 @@ export default function ResearcherPage() {
             <Beaker className="w-4 h-4" />
             Synthetic Cohorts
           </button>
-          
+
           <button
             onClick={() => setActiveTab("vus")}
             className={`
@@ -158,19 +158,7 @@ export default function ResearcherPage() {
 
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-6 mt-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-4">
-              <span>GenomaVeda Research v2.4.0</span>
-              <span>•</span>
-              <span>RIFT 2026 Hackathon</span>
-            </div>
-            <span className="text-slate-600">RESEARCH USE ONLY. NOT FOR CLINICAL DIAGNOSIS.</span>
-          </div>
-        </div>
-      </footer>
+
     </div>
   );
 }

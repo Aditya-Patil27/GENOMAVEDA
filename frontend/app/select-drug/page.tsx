@@ -32,140 +32,140 @@ export default function SelectDrugPage() {
     setIsAnalyzing(true);
 
     try {
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Analysis timed out — CPIC API may be slow. Please retry.")), 60_000)
-    );
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Analysis timed out — CPIC API may be slow. Please retry.")), 60_000)
+      );
 
-    const analysisResults: AnalysisResult[] = await Promise.race([
-      Promise.all(
-        selectedDrugs.map(async (drug) => {
-          const primaryGene = DRUG_GENE_MAP[drug];
+      const analysisResults: AnalysisResult[] = await Promise.race([
+        Promise.all(
+          selectedDrugs.map(async (drug) => {
+            const primaryGene = DRUG_GENE_MAP[drug];
 
-          // Client-side: resolve diplotype and assess risk (async — hits CPIC API)
-          const diplotypeResult = await resolveDiplotype(primaryGene, parsedVCFData.variants);
-          // Calculate minGQ for the gene's variants to drive confidence score
-          const geneVariants = parsedVCFData.variants.filter((v) => v.gene === primaryGene);
-          
-          let minGQ = 60; // Default high confidence if no variants (wildtype)
-          if (geneVariants.length > 0) {
-            // Find minimum GQ among detected variants. strict validation.
-            // If v.gq is undefined (legacy parser), default to 0 to be safe, but our parser now ensures it.
-            const gqValues = geneVariants.map(v => v.gq !== undefined ? v.gq : 0);
-            minGQ = Math.min(...gqValues);
-          } else {
-             // For Wildtype (*1/*1), we rely on the fact that no variants were found.
-             // If coverage was low, we might want to penalize? 
-             // But simpler to assume standard Wildtype confidence unless specific DP check logic exists.
-             // Let's set it to 60 (max) for WT.
-             minGQ = 99;
-          }
+            // Client-side: resolve diplotype and assess risk (async — hits CPIC API)
+            const diplotypeResult = await resolveDiplotype(primaryGene, parsedVCFData.variants);
+            // Calculate minGQ for the gene's variants to drive confidence score
+            const geneVariants = parsedVCFData.variants.filter((v) => v.gene === primaryGene);
+
+            let minGQ = 60; // Default high confidence if no variants (wildtype)
+            if (geneVariants.length > 0) {
+              // Find minimum GQ among detected variants. strict validation.
+              // If v.gq is undefined (legacy parser), default to 0 to be safe, but our parser now ensures it.
+              const gqValues = geneVariants.map(v => v.gq !== undefined ? v.gq : 0);
+              minGQ = Math.min(...gqValues);
+            } else {
+              // For Wildtype (*1/*1), we rely on the fact that no variants were found.
+              // If coverage was low, we might want to penalize? 
+              // But simpler to assume standard Wildtype confidence unless specific DP check logic exists.
+              // Let's set it to 60 (max) for WT.
+              minGQ = 99;
+            }
 
 
-          const risk = await assessRisk(drug, diplotypeResult.phenotype, primaryGene, geneVariants.length, diplotypeResult.exactMatch, diplotypeResult.diplotype, minGQ);
-          const rawSessionId = uuidv4();
-          const patientId = await anonymizePatientId(rawSessionId);
+            const risk = await assessRisk(drug, diplotypeResult.phenotype, primaryGene, geneVariants.length, diplotypeResult.exactMatch, diplotypeResult.diplotype, minGQ);
+            const rawSessionId = uuidv4();
+            const patientId = await anonymizePatientId(rawSessionId);
 
-          // Call backend for LLM explanation (phenotype only — no genomic data)
-          let explanation;
-          try {
-            const response = await fetch("/api/analyze", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                patient_id: patientId,
-                drug,
-                primary_gene: primaryGene,
-                phenotype: diplotypeResult.phenotype,
-                diplotype: diplotypeResult.diplotype,
+            // Call backend for LLM explanation (phenotype only — no genomic data)
+            let explanation;
+            try {
+              const response = await fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  patient_id: patientId,
+                  drug,
+                  primary_gene: primaryGene,
+                  phenotype: diplotypeResult.phenotype,
+                  diplotype: diplotypeResult.diplotype,
+                  confidence_score: risk.confidence_score,
+                  severity: risk.severity,
+                  risk_label: risk.risk_label,
+                }),
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                explanation = data.llm_generated_explanation;
+              }
+            } catch {
+              // Backend unavailable — use fallback
+            }
+
+            // Fallback explanation if backend call failed
+            if (!explanation) {
+              const phenotypeNames: Record<string, string> = {
+                PM: "Poor Metabolizer",
+                IM: "Intermediate Metabolizer",
+                NM: "Normal Metabolizer",
+                RM: "Rapid Metabolizer",
+                URM: "Ultra-Rapid Metabolizer",
+                Unknown: "Unknown Metabolizer Status",
+              };
+              const phenotypeFull =
+                phenotypeNames[diplotypeResult.phenotype] || "Unknown Metabolizer Status";
+
+              explanation = {
+                summary: `Patient has ${diplotypeResult.phenotype} (${phenotypeFull}) phenotype for ${primaryGene}, affecting ${drug} metabolism. Risk assessment: ${risk.risk_label}.`,
+                biological_mechanism: `${primaryGene} encodes a key enzyme responsible for metabolizing ${drug}. The detected diplotype ${diplotypeResult.diplotype} results in ${phenotypeFull} enzyme activity.`,
+                variant_impact: `The diplotype ${diplotypeResult.diplotype} in ${primaryGene} produces ${phenotypeFull} enzyme function, affecting how the body processes ${drug}.`,
+                clinical_context: `This pharmacogenomic profile has direct implications for ${drug} dosing. CPIC guidelines recommend: ${risk.risk_label}.`,
+                disclaimer:
+                  "This is AI-generated clinical decision support only. All treatment decisions require qualified healthcare provider review.",
+              };
+            }
+
+            return {
+              patient_id: patientId,
+              drug,
+              timestamp: new Date().toISOString(),
+              risk_assessment: {
+                risk_label: risk.risk_label,
                 confidence_score: risk.confidence_score,
                 severity: risk.severity,
-                risk_label: risk.risk_label,
-              }),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              explanation = data.llm_generated_explanation;
-            }
-          } catch {
-            // Backend unavailable — use fallback
-          }
-
-          // Fallback explanation if backend call failed
-          if (!explanation) {
-            const phenotypeNames: Record<string, string> = {
-              PM: "Poor Metabolizer",
-              IM: "Intermediate Metabolizer",
-              NM: "Normal Metabolizer",
-              RM: "Rapid Metabolizer",
-              URM: "Ultra-Rapid Metabolizer",
-              Unknown: "Unknown Metabolizer Status",
-            };
-            const phenotypeFull =
-              phenotypeNames[diplotypeResult.phenotype] || "Unknown Metabolizer Status";
-
-            explanation = {
-              summary: `Patient has ${diplotypeResult.phenotype} (${phenotypeFull}) phenotype for ${primaryGene}, affecting ${drug} metabolism. Risk assessment: ${risk.risk_label}.`,
-              biological_mechanism: `${primaryGene} encodes a key enzyme responsible for metabolizing ${drug}. The detected diplotype ${diplotypeResult.diplotype} results in ${phenotypeFull} enzyme activity.`,
-              variant_impact: `The diplotype ${diplotypeResult.diplotype} in ${primaryGene} produces ${phenotypeFull} enzyme function, affecting how the body processes ${drug}.`,
-              clinical_context: `This pharmacogenomic profile has direct implications for ${drug} dosing. CPIC guidelines recommend: ${risk.risk_label}.`,
-              disclaimer:
-                "This is AI-generated clinical decision support only. All treatment decisions require qualified healthcare provider review.",
-            };
-          }
-
-          return {
-            patient_id: patientId,
-            drug,
-            timestamp: new Date().toISOString(),
-            risk_assessment: {
-              risk_label: risk.risk_label,
-              confidence_score: risk.confidence_score,
-              severity: risk.severity,
-              clinical_recommendation: risk.recommendation,
-              llm_generated_explanation: typeof explanation === "string" 
-                ? explanation 
-                : JSON.stringify(explanation),
-            },
-            pharmacogenomic_profile: {
-              primary_gene: primaryGene,
-              diplotype: diplotypeResult.diplotype,
-              phenotype: diplotypeResult.phenotype,
-              detected_variants: geneVariants.map((v) => ({
-                rsid: v.rsid,
-                gene: v.gene,
-                chromosome: v.chromosome,
-                position: v.position,
-                ref_allele: v.ref_allele,
-                alt_allele: v.alt_allele,
-                zygosity: v.zygosity,
-                star_allele: v.star_allele || "",
-                clinical_significance: v.clinical_significance || "",
-              })),
-            },
-            quality_metrics: {
-              vcf_parsing_success: parsedVCFData.success,
-              genes_missing: ["VKORC1"], // Mock missing genes per PRD example
-              privacy_audit: {
-                raw_vcf_retained_on_server: false,
-                variants_processed_locally: true,
-                data_sent_to_llm: "phenotype_label_only",
-                differential_privacy_applied: true,
+                clinical_recommendation: risk.recommendation,
+                llm_generated_explanation: typeof explanation === "string"
+                  ? explanation
+                  : JSON.stringify(explanation),
               },
-            },
-            // Explicitly set data_source for the UI badge
-            data_source: {
-              cpic_api: risk.data_source?.includes("API") ?? false,
-              cpic_classification: risk.cpic_classification,
-              cpic_implications: risk.cpic_implications,
-              diplotype_exact_match: diplotypeResult.exactMatch,
-              confidence_basis: risk.data_source || "Fallback Cache"
-            }
-          };
-        })
-      ),
-      timeout,
-    ]);
+              pharmacogenomic_profile: {
+                primary_gene: primaryGene,
+                diplotype: diplotypeResult.diplotype,
+                phenotype: diplotypeResult.phenotype,
+                detected_variants: geneVariants.map((v) => ({
+                  rsid: v.rsid,
+                  gene: v.gene,
+                  chromosome: v.chromosome,
+                  position: v.position,
+                  ref_allele: v.ref_allele,
+                  alt_allele: v.alt_allele,
+                  zygosity: v.zygosity,
+                  star_allele: v.star_allele || "",
+                  clinical_significance: v.clinical_significance || "",
+                })),
+              },
+              quality_metrics: {
+                vcf_parsing_success: parsedVCFData.success,
+                genes_missing: ["VKORC1"], // Mock missing genes per PRD example
+                privacy_audit: {
+                  raw_vcf_retained_on_server: false,
+                  variants_processed_locally: true,
+                  data_sent_to_llm: "phenotype_label_only",
+                  differential_privacy_applied: true,
+                },
+              },
+              // Explicitly set data_source for the UI badge
+              data_source: {
+                cpic_api: risk.data_source?.includes("API") ?? false,
+                cpic_classification: risk.cpic_classification,
+                cpic_implications: risk.cpic_implications,
+                diplotype_exact_match: diplotypeResult.exactMatch,
+                confidence_basis: risk.data_source || "Fallback Cache"
+              }
+            };
+          })
+        ),
+        timeout,
+      ]);
 
       // Store in context
       setSelectedDrug(selectedDrugs);
@@ -191,17 +191,16 @@ export default function SelectDrugPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push("/")}>
               <Image
                 src="/assets/image/logo.png"
                 alt="GenomaVeda Logo"
-                width={48}
-                height={48}
+                width={60}
+                height={60}
                 className="object-contain"
               />
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
-                <p className="text-xs text-slate-400">v2.4.0</p>
+                <h1 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h1>
               </div>
             </div>
 
@@ -305,25 +304,9 @@ export default function SelectDrugPage() {
           )}
         </div>
       </div>
-      
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-6 mt-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-4">
-              <span>GenomaVeda v2.4.0</span>
-              <span>•</span>
-              <span>RIFT 2026 Hackathon</span>
-              <span>•</span>
-              <span>Team Antigravity</span>
-              <span>•</span>
-              <span>Pharmacogenomics / Explainable AI Track</span>
-            </div>
-            <span className="text-slate-600">FOR EDUCATIONAL PURPOSES ONLY. NOT FOR CLINICAL DIAGNOSIS.</span>
-          </div>
-        </div>
-      </footer>
+
+
     </div>
   );
 }
