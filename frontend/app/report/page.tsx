@@ -37,17 +37,16 @@ export default function ReportPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push("/")}>
               <Image
                 src="/assets/image/logo.png"
                 alt="GenomaVeda Logo"
-                width={48}
-                height={48}
+                width={60}
+                height={60}
                 className="object-contain"
               />
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
-                <p className="text-xs text-slate-400">v2.4.0</p>
+                <h1 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h1>
               </div>
             </div>
 
@@ -95,7 +94,7 @@ export default function ReportPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 pb-16 relative">
         {showOverlay && <ProcessingOverlay onComplete={handleOverlayComplete} />}
-        
+
         <div className="clinical-card p-6">
           <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
             <div className="flex items-center gap-3">
@@ -128,23 +127,7 @@ export default function ReportPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-6 mt-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-4">
-              <span>GenomaVeda v2.4.0</span>
-              <span>•</span>
-              <span>RIFT 2026 Hackathon</span>
-              <span>•</span>
-              <span>Team Antigravity</span>
-              <span>•</span>
-              <span>Pharmacogenomics / Explainable AI Track</span>
-            </div>
-            <span className="text-slate-600">FOR EDUCATIONAL PURPOSES ONLY. NOT FOR CLINICAL DIAGNOSIS.</span>
-          </div>
-        </div>
-      </footer>
+
     </div>
   );
 }
