@@ -119,7 +119,7 @@ export default function ReportPage() {
                 <Bot className="w-5 h-5 text-teal-400" />
               </div>
               <div className="text-left">
-                <p className="text-slate-200 font-semibold leading-tight">Ask GenomIX AI</p>
+                <p className="text-slate-200 font-semibold leading-tight">Ask GenomaVeda Voice</p>
                 <p className="text-slate-400 text-xs mt-0.5">Immersive Voice Clinical Assistant</p>
               </div>
             </button>

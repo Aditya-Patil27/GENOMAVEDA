@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Mic, MicOff, Settings, HelpCircle, Search, History, TestTube, StopCircle, Keyboard, Lock, Bot, User } from "lucide-react";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 
@@ -136,11 +137,18 @@ export default function VoiceAgent() {
     <div className="w-full min-h-[600px] flex flex-col font-display bg-[#101d22] text-slate-100 rounded-2xl overflow-hidden border border-[#283539] relative shadow-2xl">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 z-10 bg-[#101d22]/80 backdrop-blur-md border-b border-[#283539]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 text-[#13b6ec] flex items-center justify-center">
-            <span className="material-symbols-outlined !text-[32px]">genetics</span>
+        <div className="flex items-center gap-4">
+          <Image
+            src="/assets/image/logo.png"
+            alt="GenomaVeda Logo"
+            width={48}
+            height={48}
+            className="object-contain"
+          />
+          <div>
+            <h2 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h2>
+            <p className="text-[10px] tracking-wider text-[#13b6ec] font-medium uppercase mt-0.5">Voice Assistant</p>
           </div>
-          <h2 className="text-white text-xl font-bold tracking-tight">GenomIX Voice</h2>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-[#283539] text-slate-300 hover:bg-[#344247] transition-colors">
@@ -178,9 +186,7 @@ export default function VoiceAgent() {
         {agentState === "idle" && (
           <div className="relative z-10 flex flex-col items-center gap-8 max-w-2xl px-6 text-center animate-in fade-in zoom-in duration-500">
             <div className="flex flex-col items-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-[#283539]/50 flex items-center justify-center border border-[#3b4d54] backdrop-blur-sm shadow-xl shadow-black/20">
-                <span className="material-symbols-outlined text-[#13b6ec] !text-4xl">graphic_eq</span>
-              </div>
+
               <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-br from-white to-slate-400 bg-clip-text text-transparent">
                 Ready to Analyze
               </h1>
@@ -382,7 +388,6 @@ export default function VoiceAgent() {
         </div>
         <div className="flex gap-4">
           <span>Microphone Input: <span className="text-[#13b6ec] font-bold">High Quality</span></span>
-          <span>V 2.4.1</span>
         </div>
       </footer>
     </div>

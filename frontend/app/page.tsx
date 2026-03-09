@@ -70,28 +70,29 @@ export default function Home() {
 
       <main className="relative z-10 flex flex-col items-center justify-center pt-24 pb-16 px-6">
 
-        {/* Header */}
-        <header className="absolute top-0 left-0 w-full z-20 pointer-events-none">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              {/* Left: Logo */}
-              <div className="flex items-center gap-4 pointer-events-auto">
-                <Image
-                  src="/assets/image/logo.png"
-                  alt="GenomaVeda Logo"
-                  width={60}
-                  height={60}
-                  className="object-contain"
-                />
-                <div>
-                  <h1 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+
+
+        {/* Centered Brand */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+          className="flex flex-col items-center gap-4 mb-20"
+        >
+          <Image
+            src="/assets/image/logo.png"
+            alt="GenomaVeda Logo"
+            width={100}
+            height={100}
+            className="object-contain drop-shadow-[0_0_24px_rgba(0,212,255,0.4)]"
+          />
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#F0F6FF] tracking-tight" style={{ fontFamily: "Syne, sans-serif" }}>
+            GenomaVeda
+          </h1>
+        </motion.div>
 
         {/* H1 */}
+
         <div className="text-center max-w-4xl tracking-[-0.02em] font-bold text-4xl sm:text-5xl md:text-[56px] leading-[1.1] mb-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
