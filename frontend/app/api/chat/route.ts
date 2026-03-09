@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Groq } from "groq-sdk";
 import { checkRateLimit, getClientIp, CORS_HEADERS } from "@/lib/rate-limit";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing_key" });
 
 const SYSTEM_PROMPT = `You are PharmaGuard AI — an expert pharmacogenomics assistant.
 You help users understand:
@@ -34,10 +34,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { message, history } = await request.json();
+    const { message, history, context } = await request.json();
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "No message provided" }, { status: 400, headers: CORS_HEADERS });
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json({ reply: "Groq API key is missing. Please configure GROQ_API_KEY in your environment." }, { headers: CORS_HEADERS });
     }
 
     const sanitizedMessage = message.trim().slice(0, MAX_MESSAGE_LENGTH);
@@ -45,8 +49,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Message cannot be empty" }, { status: 400, headers: CORS_HEADERS });
     }
 
+    const finalSystemPrompt = context
+      ? `${SYSTEM_PROMPT}\n\nHere is the user's latest pharmacogenomic report data to use as context for answering their query:\n${String(context).slice(0, 2000)}`
+      : SYSTEM_PROMPT;
+
     const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: finalSystemPrompt },
     ];
 
     if (Array.isArray(history)) {
