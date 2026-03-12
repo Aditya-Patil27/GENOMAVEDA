@@ -94,10 +94,11 @@ async function generateMarathiTTS(text: string): Promise<Buffer | null> {
         "api-subscription-key": sarvamApiKey
       },
       body: JSON.stringify({
-        text: text.slice(0, 2500), // Sarvam TTS v3 uses 'text' parameter
+        text: text.slice(0, 2500),
         language_code: "mr-IN",
-        speaker: "aditya", // Updated to a confirmed valid voice for v3
-        model: "bulbul:v3"
+        speaker: "rahul",
+        model: "bulbul:v3",
+        pace: 1.65
       }),
       signal: AbortSignal.timeout(15_000)
     });
@@ -245,12 +246,6 @@ Return ONLY valid JSON: {"ingredient": "DRUG_NAME"} in ALL CAPS, or {"ingredient
 }
 
 async function getChatReply(from: string, userMessage: string): Promise<string> {
-  const sarvamApiKey = process.env.SARVAM_API_KEY || "";
-  if (!sarvamApiKey) {
-    console.error("[whatsapp] CRITICAL: SARVAM_API_KEY is not set in environment variables.");
-    return "PharmaGuard AI System Error: The Sarvam AI API key is missing. Please ensure it is set in your Vercel/local environment variables.";
-  }
-
   let history = userSessions.get(from) || [];
   if (history.length === 0) {
     history.push({ role: "system", content: PHARMA_SYSTEM_PROMPT });
@@ -264,45 +259,29 @@ async function getChatReply(from: string, userMessage: string): Promise<string> 
   }
 
   try {
-    const res = await fetch("https://api.sarvam.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-subscription-key": sarvamApiKey
-      },
-      body: JSON.stringify({
-        model: "sarvam-m",
-        messages: history,
-        temperature: 0.4,
-        max_tokens: 400,
-        reasoning_effort: "none"  // Disable thinking mode to avoid <think> tags
-      })
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: history,
+      temperature: 0.4,
+      max_tokens: 400,
     });
 
-    if (!res.ok) {
-      const errorDetail = await res.text();
-      console.error("[whatsapp] Sarvam API error details:", errorDetail);
-      return `Sorry, I couldn't process your question right now. (Sarvam API Error: ${res.status})`;
-    }
+    let reply = completion.choices?.[0]?.message?.content || "";
 
-    const data = await res.json();
-    let reply = data.choices?.[0]?.message?.content || "";
-    
-    // Strip any <think> tags that the model may still emit
+    // Safety: strip any stray <think> tags just in case
     reply = stripThinkTags(reply);
-    
-    // If the reply is empty after stripping (model only produced thinking), provide a fallback
+
     if (!reply) {
       reply = "माफ करा, मला तुमचा प्रश्न समजला नाही. कृपया पुन्हा विचारा.";
     }
-    
+
     history.push({ role: "assistant", content: reply });
     userSessions.set(from, history);
 
     return reply;
   } catch (error) {
-    console.error("[whatsapp] Error calling Sarvam AI:", error);
-    return "Sorry, I ran into an error processing your query.";
+    console.error("[whatsapp] Error calling Groq AI:", error);
+    return "माफ करा, तुमची विनंती प्रक्रिया करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.";
   }
 }
 
