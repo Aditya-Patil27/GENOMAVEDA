@@ -32,6 +32,9 @@ export const metadata: Metadata = {
 };
 
 
+import { LanguageProvider } from "@/context/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -50,13 +53,18 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="antialiased">
-        {/* React Bits Plasma background */}
-        <PlasmaBackground color="#ffffff" speed={0.6} opacity={0.8} />
+        <LanguageProvider>
+          {/* React Bits Plasma background */}
+          <PlasmaBackground color="#ffffff" speed={0.6} opacity={0.8} />
 
-        <PharmaGuardProvider>
-          <div className="relative z-10">{children}</div>
-          <PharmaGuardChatbot />
-        </PharmaGuardProvider>
+          <PharmaGuardProvider>
+            <div className="relative z-10">
+              <LanguageSwitcher />
+              {children}
+            </div>
+            <PharmaGuardChatbot />
+          </PharmaGuardProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -12,7 +12,9 @@ const PHARMA_SYSTEM_PROMPT = `You are PharmaGuard AI — an expert pharmacogenom
 Help users understand drug-gene interactions, metabolizer phenotypes, and CPIC guidelines.
 Keep answers concise (under 300 words) and easy to read on mobile.
 Always recommend consulting a pharmacist or physician for clinical decisions.
-If a user sends a medicine image, you will receive the identified drug name and should explain its pharmacogenomic relevance.`;
+CRITICAL INSTRUCTION: You must respond in Marathi (मराठी) by default, as your primary users are from rural Maharashtra. Only use English if explicitly asked.
+When discussing a medicine, if there are known adverse drug-gene interactions, you MUST suggest safer alternative medicines or alternative options suitable for the user's condition.
+If a user sends a medicine image, you will receive the identified drug name and should explain its pharmacogenomic relevance in Marathi.`;
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -64,6 +66,97 @@ async function sendWhatsAppReply(to: string, body: string): Promise<void> {
   }
 }
 
+async function generateMarathiTTS(text: string): Promise<Buffer | null> {
+  const sarvamApiKey = process.env.SARVAM_API_KEY || "";
+  if (!sarvamApiKey) return null;
+
+  try {
+    const res = await fetch("https://api.sarvam.ai/v1/text-to-speech", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-subscription-key": sarvamApiKey
+      },
+      body: JSON.stringify({
+        inputs: [text.slice(0, 500)], // Sarvam TTS limit for text
+        target_language_code: "mr-IN",
+        speaker: "meera",
+        model: "bulbul:v1"
+      }),
+      signal: AbortSignal.timeout(15_000)
+    });
+
+    if (!res.ok) {
+      console.error("[whatsapp] TTS generation failed:", await res.text());
+      return null;
+    }
+
+    const data = await res.json() as { audios: string[] };
+    if (!data.audios?.[0]) return null;
+
+    return Buffer.from(data.audios[0], "base64");
+  } catch (err) {
+    console.error("[whatsapp] Error generating TTS:", err);
+    return null;
+  }
+}
+
+async function uploadMediaToWhatsApp(buffer: Buffer, mimeType: string): Promise<string | null> {
+  const phoneId = process.env.META_WA_PHONE_ID;
+  const token = process.env.META_WA_TOKEN;
+
+  const formData = new FormData();
+  formData.append("messaging_product", "whatsapp");
+  formData.append("file", new Blob([new Uint8Array(buffer)]), "audio.wav");
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/media`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: formData,
+      signal: AbortSignal.timeout(15_000)
+    });
+
+    if (!res.ok) {
+      console.error("[whatsapp] Meta media upload failed:", await res.text());
+      return null;
+    }
+
+    const data = await res.json() as { id: string };
+    return data.id;
+  } catch (err) {
+    console.error("[whatsapp] Error uploading media:", err);
+    return null;
+  }
+}
+
+async function sendWhatsAppAudio(to: string, mediaId: string): Promise<void> {
+  const phoneId = process.env.META_WA_PHONE_ID;
+  const token = process.env.META_WA_TOKEN;
+
+  const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "audio",
+      audio: { id: mediaId },
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`[whatsapp] Audio send failed: ${res.status} ${err}`);
+  }
+}
+
 async function identifyDrugFromMediaId(mediaId: string): Promise<string | null> {
   const token = process.env.META_WA_TOKEN;
 
@@ -105,8 +198,8 @@ async function identifyDrugFromMediaId(mediaId: string): Promise<string | null> 
   const mimeType = imgRes.headers.get("content-type") ?? "image/jpeg";
   const dataUrl = `data:${mimeType};base64,${base64}`;
 
-  const completion = await groq.chat.completions.create({
-    model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    const completion = await groq.chat.completions.create({
+    model: "llama-3.2-11b-vision-preview",
     messages: [
       {
         role: "user",
@@ -138,7 +231,8 @@ Return ONLY valid JSON: {"ingredient": "DRUG_NAME"} in ALL CAPS, or {"ingredient
 async function getChatReply(from: string, userMessage: string): Promise<string> {
   const sarvamApiKey = process.env.SARVAM_API_KEY || "";
   if (!sarvamApiKey) {
-    console.warn("[whatsapp] SARVAM_API_KEY is not set. Chat will likely fail.");
+    console.error("[whatsapp] CRITICAL: SARVAM_API_KEY is not set in environment variables.");
+    return "PharmaGuard AI System Error: The Sarvam AI API key is missing. Please ensure it is set in your Vercel/local environment variables.";
   }
 
   let history = userSessions.get(from) || [];
@@ -169,8 +263,9 @@ async function getChatReply(from: string, userMessage: string): Promise<string> 
     });
 
     if (!res.ok) {
-      console.error("[whatsapp] Sarvam API error:", await res.text());
-      return "Sorry, I couldn't process your question right now. (API Error)";
+      const errorDetail = await res.text();
+      console.error("[whatsapp] Sarvam API error details:", errorDetail);
+      return `Sorry, I couldn't process your question right now. (Sarvam API Error: ${res.status})`;
     }
 
     const data = await res.json();
@@ -193,7 +288,11 @@ export async function GET(request: Request) {
   const challenge = searchParams.get("hub.challenge");
 
   if (mode === "subscribe" && token === process.env.META_WA_VERIFY_TOKEN) {
-    return new Response(challenge ?? "", { status: 200 });
+    // Add bypass header for loca.lt localtunnel (returns the challenge instead of HTML warning page)
+    return new Response(challenge ?? "", { 
+      status: 200, 
+      headers: { "Bypass-Tunnel-Reminder": "true" } 
+    });
   }
   return new Response("Forbidden", { status: 403 });
 }
@@ -245,7 +344,7 @@ export async function POST(request: Request) {
       const image = msg.image as Record<string, string> | undefined;
       const mediaId = image?.id;
       if (!mediaId) {
-        await sendWhatsAppReply(from, "I couldn't access the image. Please try again with a clearer photo.");
+        await sendWhatsAppReply(from, "मला फोटो उघडता आला नाही. कृपया पुन्हा एकदा स्पष्ट फोटो पाठवा.");
         return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });
       }
 
@@ -254,7 +353,7 @@ export async function POST(request: Request) {
       if (!drug) {
         await sendWhatsAppReply(
           from,
-          "I couldn't identify the medicine. Please send a clearer photo of the front packaging showing the drug name.\n\nYou can also type your question directly!"
+          "मला हे औषध ओळखता आले नाही. कृपया औषधाचे नाव दिसणारा स्पष्ट फोटो पाठवा.\n\nतुम्ही तुमचा प्रश्न थेट टाइप करूनही विचारू शकता!"
         );
         return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });
       }
@@ -262,24 +361,42 @@ export async function POST(request: Request) {
       // Try resolving brand name to generic active ingredient
       const genericDrug = await resolveToGeneric(drug);
       const identifiedText = genericDrug 
-        ? `💊 *${drug}* identified (Active Ingredient: *${genericDrug}*)!\n\n`
-        : `💊 *${drug}* identified!\n\n`;
+        ? `💊 *${drug}* ओळखले (मूळ औषध: *${genericDrug}*)!\n\n`
+        : `💊 *${drug}* ओळखले!\n\n`;
       
       const searchTarget = genericDrug || drug;
 
       const explanation = await getChatReply(from, 
-        `The medicine package shows the active ingredient: ${searchTarget}. Explain its pharmacogenomic relevance — which genes affect its metabolism, what metabolizer types should be cautious, and CPIC guideline summary. End by suggesting the user visit GenomaVeda for a full genomic risk report.`
+        `The medicine package shows the active ingredient: ${searchTarget}. Explain its pharmacogenomic relevance — which genes affect its metabolism, what metabolizer types should be cautious, and CPIC guideline summary. End by suggesting the user visit GenomaVeda for a full genomic risk report. CRITICAL: Provide the entire response in Marathi (मराठी) and suggest alternative safe medicines if there are adverse interactions.`
       );
       await sendWhatsAppReply(from, `${identifiedText}${explanation}`);
+
+      // TTS generation for Explanation
+      const audioBuffer = await generateMarathiTTS(explanation);
+      if (audioBuffer) {
+        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/wav");
+        if (mediaId) {
+          await sendWhatsAppAudio(from, mediaId);
+        }
+      }
     } else if (msgType === "text") {
       const text = ((msg.text as Record<string, string> | undefined)?.body ?? "").trim();
       if (!text) return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });
       const reply = await getChatReply(from, text);
       await sendWhatsAppReply(from, reply);
+
+      // TTS generation for generic Text Chat
+      const audioBuffer = await generateMarathiTTS(reply);
+      if (audioBuffer) {
+        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/wav");
+        if (mediaId) {
+          await sendWhatsAppAudio(from, mediaId);
+        }
+      }
     } else {
       await sendWhatsAppReply(
         from,
-        "Hi! I'm PharmaGuard AI 💊\n\n• *Text*: Ask about drug-gene interactions\n• *Image*: Send a medicine package photo to identify it\n\nExample: \"What is a CYP2D6 Poor Metabolizer?\""
+        "नमस्कार! मी PharmaGuard AI आहे 💊\n\n• *प्रश्न विचारा*: औषध आणि जनुकीय परस्परसंवादाबद्दल (drug-gene interaction) विचारा\n• *फोटो पाठवा*: औषधाचा फोटो पाठवून त्याची माहिती मिळवा\n\nउदा: \"पॅरासिटामॉल (Paracetamol) सुरक्षित आहे का?\""
       );
     }
 

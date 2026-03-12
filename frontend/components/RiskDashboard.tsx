@@ -32,6 +32,8 @@ import InteractionFingerprint from "./InteractionFingerprint";
 import DrugAlternativeSimulator from "./DrugAlternativeSimulator";
 import RiskEngineSummaryDashboard from "./RiskEngineSummaryDashboard";
 import RiskEngineExpandedExplainability from "./RiskEngineExpandedExplainability";
+import { useTranslation } from "@/hooks/useTranslation";
+
 
 interface RiskDashboardProps {
   results: AnalysisResult[];
@@ -43,36 +45,37 @@ const riskConfig = {
     bg: "bg-emerald-500/10",
     border: "border-emerald-500/30",
     icon: Shield,
-    label: "SAFE",
+    labelKey: "dashboard.safe",
   },
   "Adjust Dosage": {
     color: "text-amber-400",
     bg: "bg-amber-500/10",
     border: "border-amber-500/30",
     icon: ShieldAlert,
-    label: "ADJUST DOSAGE",
+    labelKey: "dashboard.adjust_dosage",
   },
   Toxic: {
     color: "text-red-400",
     bg: "bg-red-500/10",
     border: "border-red-500/30",
     icon: ShieldX,
-    label: "TOXIC",
+    labelKey: "dashboard.toxic",
   },
   Ineffective: {
     color: "text-amber-400",
     bg: "bg-amber-400/10",
     border: "border-amber-400/30",
     icon: ShieldOff,
-    label: "INEFFECTIVE",
+    labelKey: "dashboard.ineffective",
   },
   Unknown: {
     color: "text-slate-400",
     bg: "bg-slate-500/10",
     border: "border-slate-600",
     icon: ShieldQuestion,
-    label: "UNKNOWN",
+    labelKey: "dashboard.unknown",
   },
+
 };
 
 const severityColors: Record<string, string> = {
@@ -116,7 +119,9 @@ function AccordionSection({
 }
 
 function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult; index: number; patientPhenotypes: Record<string, string> }) {
+  const { t } = useTranslation();
   const [showPhi, setShowPhi] = useState(false);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [lang, setLang] = useState("en-US");
   
@@ -208,22 +213,25 @@ function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult
         <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${risk.bg} border ${risk.border}`}>
           <RiskIcon className={`w-5 h-5 ${risk.color}`} />
           <span className={`font-semibold text-sm ${risk.color}`}>
-            {risk.label}
+            {t(risk.labelKey).toUpperCase()}
           </span>
+
         </div>
       </div>
 
       {/* Severity + Confidence row */}
       <div className="flex items-center gap-6 mb-5">
         <div>
-          <p className="text-xs text-slate-400 uppercase tracking-wider">Severity</p>
+          <p className="text-xs text-slate-400 uppercase tracking-wider">{t('dashboard.severity')}</p>
           <p className={`font-semibold text-sm mt-1 ${dynamicSeverityColors}`}>
             {dynamicSeverity}
           </p>
         </div>
         <div className="flex-1">
+          <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">{t('dashboard.confidence')}</p>
           <ConfidenceGauge score={result.risk_assessment.confidence_score} />
         </div>
+
       </div>
 
       {/* Genomic profile strip */}
@@ -267,7 +275,8 @@ function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult
       </div>
 
       {/* Expandable sections — always visible */}
-      <AccordionSection title="Clinical Recommendation" icon={Pill} defaultOpen={true}>
+      <AccordionSection title={t('dashboard.clinical_recommendation')} icon={Pill} defaultOpen={true}>
+
         <div className="space-y-2 text-sm">
           <p className="text-slate-300">{dynamicRecommendation}</p>
           <div className="flex gap-4 flex-wrap mt-2">
@@ -280,7 +289,8 @@ function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult
         </div>
       </AccordionSection>
 
-      <AccordionSection title="AI Clinical Explanation" icon={Brain}>
+      <AccordionSection title={t('dashboard.ai_explanation')} icon={Brain}>
+
         <div className="mb-4 flex items-center gap-3 p-3 bg-slate-800 rounded border border-slate-700">
           <Globe2 className="w-4 h-4 text-teal-400" />
           <select 
@@ -302,8 +312,9 @@ function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult
             }`}
           >
             {isPlaying ? <Square className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-            {isPlaying ? "STOP AUDIO" : "LISTEN"}
+            {isPlaying ? t('dashboard.stop_audio').toUpperCase() : t('dashboard.listen').toUpperCase()}
           </button>
+
         </div>
         
         <div className="space-y-3 text-sm text-slate-300">
@@ -349,22 +360,25 @@ function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult
         <div className="bg-slate-800 p-4 flex justify-between items-center border-b border-slate-700">
           <div className="flex items-center gap-2">
              <ShieldAlert className="text-amber-400" size={18} />
-             <span className="font-bold text-slate-100 text-sm">Protected Health Information (PHI)</span>
+             <span className="font-bold text-slate-100 text-sm">{t('dashboard.phi')}</span>
           </div>
+
           <button 
             onClick={() => setShowPhi(!showPhi)}
             className="flex items-center gap-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded transition font-bold border border-slate-600"
           >
             {showPhi ? <EyeOff size={14} /> : <Eye size={14} />}
-            {showPhi ? "Hide Raw Genomic Data" : "Clinician Override: Reveal"}
+            {showPhi ? t('dashboard.hide_genomic_data') : t('dashboard.reveal_genomic_data')}
           </button>
+
         </div>
         
         {showPhi ? (
           <div className="p-4 bg-red-500/10 border-l-4 border-red-500/50">
             <p className="text-xs text-red-400 font-bold mb-3 uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle size={12} /> Warning: Viewing Identifiable Genomic Data (rsID / Position)
+              <AlertTriangle size={12} /> {t('dashboard.phi_warning')}
             </p>
+
             
             {/* EXISTING DETECTED VARIANTS TABLE */}
             {result.pharmacogenomic_profile.detected_variants.length > 0 ? (
@@ -408,16 +422,17 @@ function DrugCard({ result, index, patientPhenotypes }: { result: AnalysisResult
         )}
       </div>
 
-      <AccordionSection title="Quality Metrics" icon={Activity}>
+      <AccordionSection title={t('dashboard.quality_metrics')} icon={Activity}>
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <p className="text-slate-400">Parsing Status</p>
+            <p className="text-slate-400">{t('dashboard.parsing_status')}</p>
             <p className={result.quality_metrics.vcf_parsing_success ? "text-emerald-400" : "text-red-400"}>
-              {result.quality_metrics.vcf_parsing_success ? "✓ Success" : "✗ Failed"}
+              {result.quality_metrics.vcf_parsing_success ? `✓ ${t('dashboard.success')}` : `✗ ${t('dashboard.failed')}`}
             </p>
           </div>
           <div>
-            <p className="text-slate-400">Missing Genes</p>
+            <p className="text-slate-400">{t('dashboard.missing_genes')}</p>
+
             <p className="text-slate-300 truncate" title={result.quality_metrics.genes_missing?.join(", ")}>
               {result.quality_metrics.genes_missing?.join(", ") || "None"}
             </p>
@@ -443,7 +458,9 @@ import { buildReportHTML } from "./PdfReport";
 // ... (existing imports)
 
 export default function RiskDashboard({ results }: RiskDashboardProps) {
+  const { t } = useTranslation();
   if (results.length === 0) return null;
+
 
   const selectedDrugs = results.map((r) => r.drug);
   const patientPhenotypes = results.reduce((acc, r) => {
@@ -550,15 +567,17 @@ export default function RiskDashboard({ results }: RiskDashboardProps) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-slate-100 flex items-center gap-3">
           <Shield className="w-5 h-5 text-teal-400" />
-          Analysis Complete
+          {t('dashboard.analysis_complete')}
         </h2>
+
         <button 
           onClick={handleExportAll}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
         >
           <Download className="w-4 h-4" />
-          Export All Reports
+          {t('dashboard.export_all')}
         </button>
+
       </div>
 
       <InteractionFingerprint selectedDrugs={selectedDrugs} patientPhenotypes={patientPhenotypes} />

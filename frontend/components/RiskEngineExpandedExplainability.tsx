@@ -3,13 +3,17 @@
 import React, { useState } from "react";
 import { AnalysisResult } from "@/lib/types";
 import { Dna, ChevronDown, ChevronRight, Activity, BarChart3, ArrowRight, TrendingUp, AlertOctagon, AlertTriangle as WarningIcon, Info } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
+
 
 interface RiskEngineExpandedExplainabilityProps {
   result: AnalysisResult;
 }
 
 export default function RiskEngineExpandedExplainability({ result }: RiskEngineExpandedExplainabilityProps) {
+  const { t } = useTranslation();
   const [expandedRsid, setExpandedRsid] = useState<string | null>(
+
     result.pharmacogenomic_profile.detected_variants[0]?.rsid || null
   );
 
@@ -20,8 +24,9 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
       <div className="flex-[2] flex flex-col gap-6">
         <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
           <Dna className="w-6 h-6 text-[#13b6ec]" />
-          Detected Variants
+          {t('dashboard.detected_variants')}
         </h3>
+
 
         {result.pharmacogenomic_profile.detected_variants.map((v, i) => {
           const isExpanded = expandedRsid === v.rsid;
@@ -45,9 +50,11 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
                   <div>
                     <h4 className="text-white font-bold text-lg font-mono flex items-center gap-3">
                       {v.gene} {v.star_allele}
-                      {isExpanded && <span className="px-2 py-0.5 rounded-full bg-[#13b6ec]/10 text-[#13b6ec] text-[10px] font-bold tracking-wider uppercase border border-[#13b6ec]/20">Active Selection</span>}
+                      {isExpanded && <span className="px-2 py-0.5 rounded-full bg-[#13b6ec]/10 text-[#13b6ec] text-[10px] font-bold tracking-wider uppercase border border-[#13b6ec]/20">{t('dashboard.active_selection')}</span>}
                     </h4>
-                    <p className="text-slate-400 text-sm mt-1">{isExpanded ? "Detailed breakdown of the active variant selection." : `Chr: ${v.chromosome} | Pos: ${v.position}`}</p>
+
+                    <p className="text-slate-400 text-sm mt-1">{isExpanded ? t('dashboard.breakdown') : `${t('dashboard.chromosome')}: ${v.chromosome} | ${t('dashboard.position')}: ${v.position}`}</p>
+
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -66,8 +73,9 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
                   <div className="mb-6">
                     <div className="flex items-center gap-2 mb-3">
                       <Activity className="w-5 h-5 text-[#13b6ec]" />
-                      <span className="text-[#13b6ec] text-xs font-bold font-mono tracking-widest uppercase">Genomic Insight Engine</span>
+                      <span className="text-[#13b6ec] text-xs font-bold font-mono tracking-widest uppercase">{t('dashboard.genomic_insight_engine')}</span>
                     </div>
+
                     
                     <div className="prose prose-invert max-w-none text-slate-300">
                       <div className="border-l-2 border-[#13b6ec]/30 pl-4 py-1">
@@ -82,15 +90,17 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
                       {typeof result.risk_assessment.llm_generated_explanation !== 'string' && (
                         <div className="mt-4 pl-4 space-y-3 text-sm text-slate-400">
                           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <p><strong>Mechanism:</strong> {(result.risk_assessment.llm_generated_explanation as any).biological_mechanism}</p>
+                          <p><strong>{t('dashboard.mechanism')}:</strong> {(result.risk_assessment.llm_generated_explanation as any).biological_mechanism}</p>
                           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <p><strong>Impact:</strong> {(result.risk_assessment.llm_generated_explanation as any).variant_impact}</p>
+                          <p><strong>{t('dashboard.impact')}:</strong> {(result.risk_assessment.llm_generated_explanation as any).variant_impact}</p>
+
                           
                           {/* SAFE ALTERNATIVES DISPLAY */}
                           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                           {(result.risk_assessment.llm_generated_explanation as any).safe_alternatives?.length > 0 && (
                             <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                              <p className="font-bold text-emerald-400 font-mono tracking-widest uppercase text-xs mb-2">Smart Alternatives (Feedback Loop)</p>
+                              <p className="font-bold text-emerald-400 font-mono tracking-widest uppercase text-xs mb-2">{t('dashboard.smart_alternatives')}</p>
+
                               <ul className="list-disc pl-5 space-y-1">
                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 {((result.risk_assessment.llm_generated_explanation as any).safe_alternatives as string[]).map((alt, idx) => (
@@ -107,21 +117,25 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
                   {/* Technical Data Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                     <div className="bg-[#101d22] border border-[#283539] rounded-lg p-3">
-                      <p className="text-slate-500 text-xs font-mono mb-1">ZYGOSITY</p>
+                      <p className="text-slate-500 text-xs font-mono mb-1">{t('dashboard.zygosity')}</p>
                       <p className="text-white font-mono text-sm">{v.zygosity}</p>
                     </div>
+
                     <div className="bg-[#101d22] border border-[#283539] rounded-lg p-3">
-                      <p className="text-slate-500 text-xs font-mono mb-1">CHROMOSOME</p>
+                      <p className="text-slate-500 text-xs font-mono mb-1">{t('dashboard.chromosome')}</p>
                       <p className="text-white font-mono text-sm">{v.chromosome}</p>
                     </div>
+
                     <div className="bg-[#101d22] border border-[#283539] rounded-lg p-3">
-                      <p className="text-slate-500 text-xs font-mono mb-1">POSITION</p>
+                      <p className="text-slate-500 text-xs font-mono mb-1">{t('dashboard.position')}</p>
                       <p className="text-white font-mono text-sm">{v.position}</p>
                     </div>
+
                     <div className="bg-[#101d22] border border-[#283539] rounded-lg p-3">
-                      <p className="text-slate-500 text-xs font-mono mb-1">EXTERNAL ID</p>
+                      <p className="text-slate-500 text-xs font-mono mb-1">{t('dashboard.external_id')}</p>
                       <a href="#" className="text-[#13b6ec] hover:text-white transition-colors font-mono text-sm flex items-center gap-1">
-                        View DB
+                        {t('dashboard.view_db')}
+
                         <ArrowRight className="w-3 h-3" />
                       </a>
                     </div>
@@ -137,14 +151,16 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
       <div className="flex-1 flex flex-col gap-6">
         <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
           <BarChart3 className="w-6 h-6 text-[#13b6ec]" />
-          Impact Analysis
+          {t('dashboard.impact_analysis')}
         </h3>
+
 
         {/* Visualization Card */}
         <div className="bg-[#18282e] border border-[#283539] rounded-xl p-6 flex flex-col gap-4">
           <div className="flex justify-between items-center mb-2">
-            <h4 className="text-white font-bold text-sm font-mono uppercase">Allele Distribution</h4>
+            <h4 className="text-white font-bold text-sm font-mono uppercase">{t('dashboard.allele_distribution')}</h4>
           </div>
+
           <div className="h-48 w-full rounded-lg bg-[#101d22] border border-[#283539] relative overflow-hidden flex items-end justify-center gap-2 px-4 pb-0">
             <div className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none opacity-20">
               <div className="w-full h-px bg-slate-500"></div><div className="w-full h-px bg-slate-500"></div><div className="w-full h-px bg-slate-500"></div><div className="w-full h-px bg-slate-500"></div>
@@ -157,21 +173,24 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
             <div className="w-8 h-[25%] bg-slate-700 rounded-t-sm mx-1 opacity-50"></div>
             <div className="w-8 h-[40%] bg-slate-700 rounded-t-sm mx-1 opacity-50"></div>
           </div>
-          <p className="text-slate-400 text-xs text-center font-mono mt-1">Relative frequency in population cohorts</p>
+          <p className="text-slate-400 text-xs text-center font-mono mt-1">{t('dashboard.population_frequency')}</p>
         </div>
+
 
         {/* Clinical Action Items */}
         <div className="bg-[#18282e] border border-[#283539] rounded-xl p-6 flex flex-col gap-4">
-          <h4 className="text-white font-bold text-sm font-mono uppercase border-b border-[#283539] pb-3">Clinical Action Items</h4>
+          <h4 className="text-white font-bold text-sm font-mono uppercase border-b border-[#283539] pb-3">{t('dashboard.clinical_action_items')}</h4>
+
           
           <div className="flex gap-3 items-start">
             <div className="mt-0.5 w-5 h-5 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center shrink-0">
               <AlertOctagon className="w-3.5 h-3.5" />
             </div>
             <div>
-              <p className="text-white text-sm font-medium">Review Prescription</p>
-              <p className="text-slate-400 text-xs mt-1">Due to {result.pharmacogenomic_profile.phenotype} status.</p>
+              <p className="text-white text-sm font-medium">{t('dashboard.review_prescription')}</p>
+              <p className="text-slate-400 text-xs mt-1">{t('dashboard.due_to_status').replace('{phenotype}', result.pharmacogenomic_profile.phenotype)}</p>
             </div>
+
           </div>
           
           <div className="flex gap-3 items-start">
@@ -179,9 +198,10 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
               <WarningIcon className="w-3.5 h-3.5" />
             </div>
             <div>
-              <p className="text-white text-sm font-medium">Monitor Dosage</p>
-              <p className="text-slate-400 text-xs mt-1">Consider alternatives evaluated by AI Engine.</p>
+              <p className="text-white text-sm font-medium">{t('dashboard.monitor_dosage')}</p>
+              <p className="text-slate-400 text-xs mt-1">{t('dashboard.consider_alternatives')}</p>
             </div>
+
           </div>
           
           <div className="flex gap-3 items-start">
@@ -189,14 +209,16 @@ export default function RiskEngineExpandedExplainability({ result }: RiskEngineE
               <Info className="w-3.5 h-3.5" />
             </div>
             <div>
-              <p className="text-white text-sm font-medium">Family History Update</p>
-              <p className="text-slate-400 text-xs mt-1">Add pedigree note for detected variants.</p>
+              <p className="text-white text-sm font-medium">{t('dashboard.family_history_update')}</p>
+              <p className="text-slate-400 text-xs mt-1">{t('dashboard.add_pedigree_note')}</p>
             </div>
+
           </div>
 
           <button className="w-full mt-2 bg-[#101d22] hover:bg-[#283539] border border-[#283539] text-slate-300 rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-colors">
-            Generate Full Report
+            {t('dashboard.generate_full_report')}
           </button>
+
         </div>
 
       </div>
