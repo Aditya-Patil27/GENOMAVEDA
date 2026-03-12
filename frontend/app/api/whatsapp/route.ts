@@ -4,6 +4,16 @@ import { Groq } from "groq-sdk";
 import { checkRateLimit, getClientIp, CORS_HEADERS } from "@/lib/rate-limit";
 import { resolveToGeneric } from "@/lib/rxnorm";
 
+/** Strip <think>…</think> blocks that sarvam-m emits in thinking mode */
+function stripThinkTags(text: string): string {
+  // Remove <think>...</think> blocks (including partial/unclosed ones)
+  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  // Also handle unclosed <think> tags (model sometimes doesn't close them)
+  cleaned = cleaned.replace(/<think>[\s\S]*/gi, "");
+  // Also strip any leftover </think> tags
+  cleaned = cleaned.replace(/<\/think>/gi, "");
+  return cleaned.trim();
+}
 
 // Static client — initialised once at module load
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -84,7 +94,7 @@ async function generateMarathiTTS(text: string): Promise<Buffer | null> {
         "api-subscription-key": sarvamApiKey
       },
       body: JSON.stringify({
-        input: text.slice(0, 2500), // Updated karakter limit for v3
+        text: text.slice(0, 2500), // Sarvam TTS v3 uses 'text' parameter
         language_code: "mr-IN",
         speaker: "aditya", // Updated to a confirmed valid voice for v3
         model: "bulbul:v3"
@@ -264,7 +274,8 @@ async function getChatReply(from: string, userMessage: string): Promise<string> 
         model: "sarvam-m",
         messages: history,
         temperature: 0.4,
-        max_tokens: 400
+        max_tokens: 400,
+        reasoning_effort: "none"  // Disable thinking mode to avoid <think> tags
       })
     });
 
@@ -275,7 +286,15 @@ async function getChatReply(from: string, userMessage: string): Promise<string> 
     }
 
     const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process your question.";
+    let reply = data.choices?.[0]?.message?.content || "";
+    
+    // Strip any <think> tags that the model may still emit
+    reply = stripThinkTags(reply);
+    
+    // If the reply is empty after stripping (model only produced thinking), provide a fallback
+    if (!reply) {
+      reply = "माफ करा, मला तुमचा प्रश्न समजला नाही. कृपया पुन्हा विचारा.";
+    }
     
     history.push({ role: "assistant", content: reply });
     userSessions.set(from, history);
