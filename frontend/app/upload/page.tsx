@@ -32,17 +32,17 @@ export default function UploadPage() {
       // Store in context
       setParsedVCFData(parsed);
       setDetectedGenes(genes);
-      
+
       // Store to IndexedDB vault securely
       // Extract pseudo-patient ID or formulate one
       const patientId = "SESSION-" + Math.random().toString(36).substr(2, 8).toUpperCase();
-      
+
       const vaultData = {
         type: "vcf_session" as const,
         patient_id: patientId,
         phenotype_profiles: parsed.variants.map(v => ({ gene: v.gene, diplotype: v.star_allele || "*1/*1", phenotype: "Unknown" }))
       };
-      
+
       saveToVault(patientId, vaultData).then(() => {
         // Navigate to drug selection
         router.push("/select-drug");
@@ -65,17 +65,16 @@ export default function UploadPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push("/")}>
               <Image
                 src="/assets/image/logo.png"
                 alt="GenomaVeda Logo"
-                width={48}
-                height={48}
+                width={60}
+                height={60}
                 className="object-contain"
               />
               <div>
-                <h1 className="text-lg font-semibold text-slate-100">GenomaVeda</h1>
-                <p className="text-xs text-slate-400">v2.4.0</p>
+                <h1 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h1>
               </div>
             </div>
 
@@ -157,23 +156,7 @@ export default function UploadPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-6 mt-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-4">
-              <span>GenomaVeda v2.4.0</span>
-              <span>•</span>
-              <span>RIFT 2026 Hackathon</span>
-              <span>•</span>
-              <span>Team Antigravity</span>
-              <span>•</span>
-              <span>Pharmacogenomics / Explainable AI Track</span>
-            </div>
-            <span className="text-slate-600">FOR EDUCATIONAL PURPOSES ONLY. NOT FOR CLINICAL DIAGNOSIS.</span>
-          </div>
-        </div>
-      </footer>
+
 
       <style jsx>{`
         @keyframes fadeIn {

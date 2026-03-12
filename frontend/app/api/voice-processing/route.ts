@@ -3,7 +3,7 @@ import { Groq } from "groq-sdk";
 import { checkRateLimit, getClientIp, CORS_HEADERS } from "@/lib/rate-limit";
 
 // Static client — initialised once at module load
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing_key" });
 
 const MAX_QUERY_LENGTH = 500;
 const LLM_TIMEOUT_MS = 10_000;
@@ -29,9 +29,11 @@ export async function POST(req: Request) {
   }
 
   let query = "";
+  let contextData = "";
   try {
     const body = await req.json();
     query = body.query;
+    contextData = body.context || "";
   } catch (parseError) {
     const msg = parseError instanceof Error ? parseError.message : String(parseError);
     console.error("[VoiceAgent] JSON parse error:", msg);
@@ -51,10 +53,14 @@ export async function POST(req: Request) {
   // Cap input length to prevent excessive token usage
   const safeQuery = query.trim().slice(0, MAX_QUERY_LENGTH);
 
+  const finalSystemPrompt = contextData
+    ? `${SYSTEM_PROMPT}\n\nHere is the user's latest pharmacogenomic report data to use as context for answering their query:\n${contextData.slice(0, 2000)}`
+    : SYSTEM_PROMPT;
+
   if (!process.env.GROQ_API_KEY) {
     return NextResponse.json(
-      { error: "Voice API not configured." },
-      { status: 503, headers: CORS_HEADERS }
+      { reply: "Voice API is not configured. Please add the Groq API key to your environment variables." },
+      { headers: CORS_HEADERS }
     );
   }
 
@@ -65,7 +71,7 @@ export async function POST(req: Request) {
     const chatCompletion = await groq.chat.completions.create(
       {
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: finalSystemPrompt },
           { role: "user", content: safeQuery },
         ],
         model: "llama-3.3-70b-versatile",
@@ -84,8 +90,8 @@ export async function POST(req: Request) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[VoiceAgent] Groq error:", msg);
     return NextResponse.json(
-      { error: "An error occurred during voice processing." },
-      { status: 500, headers: CORS_HEADERS }
+      { reply: "I'm sorry, I encountered an error while processing your request. Please check your connection." },
+      { headers: CORS_HEADERS }
     );
   } finally {
     clearTimeout(timeout);

@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Mic, MicOff, Settings, HelpCircle, Search, History, TestTube, StopCircle, Keyboard, Lock, Bot, User } from "lucide-react";
+import { usePharmaGuard } from "@/context/PharmaGuardContext";
 
 type VoiceState = "idle" | "listening" | "processing" | "response";
 
@@ -10,7 +12,10 @@ export default function VoiceAgent() {
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
 
+  const { analysisResult } = usePharmaGuard();
+
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -25,14 +30,20 @@ export default function VoiceAgent() {
           for (let i = event.resultIndex; i < event.results.length; i++) {
             currentTranscript += event.results[i][0].transcript;
           }
+          transcriptRef.current = currentTranscript;
           setTranscript(currentTranscript);
         };
 
         recognitionRef.current.onend = () => {
-          // Once recognition stops, if we have transcript, send to API
-          if (agentState === "listening") {
-            setAgentState("processing");
-          }
+          // Once recognition stops, check current state via functional update
+          setAgentState(prev => {
+            if (prev === "listening" && transcriptRef.current.trim().length > 0) {
+              return "processing";
+            } else if (prev === "listening") {
+              return "idle"; // Reset if no transcript
+            }
+            return prev;
+          });
         };
       }
     }
@@ -43,19 +54,39 @@ export default function VoiceAgent() {
     if (agentState === "processing" && transcript) {
       const processVoice = async () => {
         try {
+          const payload = {
+            query: transcript,
+            context: analysisResult ? JSON.stringify(analysisResult) : undefined
+          };
+
           const res = await fetch("/api/voice-processing", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: transcript }),
+            body: JSON.stringify(payload),
           });
           if (res.ok) {
             const data = await res.json();
-            setResponse(data.reply || "No dynamic response provided.");
+            const replyText = data.reply || "No dynamic response provided.";
+            setResponse(replyText);
+            if ('speechSynthesis' in window) {
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(new SpeechSynthesisUtterance(replyText));
+            }
           } else {
-            setResponse(transcript.toLowerCase().includes("patient 849") ? "Phenotype hash 0x7F... suggests high metabolic efficiency. Analyzing metabolic pathways based on lipid markers..." : "I'm sorry, I couldn't process that query correctly.");
+            const errReply = transcript.toLowerCase().includes("patient 849") ? "Phenotype hash 0x7F... suggests high metabolic efficiency. Analyzing metabolic pathways based on lipid markers..." : "I'm sorry, I couldn't process that query correctly.";
+            setResponse(errReply);
+            if ('speechSynthesis' in window) {
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(new SpeechSynthesisUtterance(errReply));
+            }
           }
         } catch (e) {
-            setResponse("Connection error while processing voice.");
+          const networkErr = "Connection error while processing voice.";
+          setResponse(networkErr);
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(networkErr));
+          }
         } finally {
           setAgentState("response");
         }
@@ -67,6 +98,7 @@ export default function VoiceAgent() {
   // Handle voice interaction flow
   const handleStartListening = () => {
     setTranscript("");
+    transcriptRef.current = "";
     setResponse("");
     setAgentState("listening");
     if (recognitionRef.current) {
@@ -92,8 +124,12 @@ export default function VoiceAgent() {
     if (recognitionRef.current && agentState === "listening") {
       recognitionRef.current.stop();
     }
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setAgentState("idle");
     setTranscript("");
+    transcriptRef.current = "";
     setResponse("");
   };
 
@@ -101,11 +137,18 @@ export default function VoiceAgent() {
     <div className="w-full min-h-[600px] flex flex-col font-display bg-[#101d22] text-slate-100 rounded-2xl overflow-hidden border border-[#283539] relative shadow-2xl">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 z-10 bg-[#101d22]/80 backdrop-blur-md border-b border-[#283539]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 text-[#13b6ec] flex items-center justify-center">
-            <span className="material-symbols-outlined !text-[32px]">genetics</span>
+        <div className="flex items-center gap-4">
+          <Image
+            src="/assets/image/logo.png"
+            alt="GenomaVeda Logo"
+            width={48}
+            height={48}
+            className="object-contain"
+          />
+          <div>
+            <h2 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h2>
+            <p className="text-[10px] tracking-wider text-[#13b6ec] font-medium uppercase mt-0.5">Voice Assistant</p>
           </div>
-          <h2 className="text-white text-xl font-bold tracking-tight">GenomIX Voice</h2>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-[#283539] text-slate-300 hover:bg-[#344247] transition-colors">
@@ -143,9 +186,7 @@ export default function VoiceAgent() {
         {agentState === "idle" && (
           <div className="relative z-10 flex flex-col items-center gap-8 max-w-2xl px-6 text-center animate-in fade-in zoom-in duration-500">
             <div className="flex flex-col items-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-[#283539]/50 flex items-center justify-center border border-[#3b4d54] backdrop-blur-sm shadow-xl shadow-black/20">
-                <span className="material-symbols-outlined text-[#13b6ec] !text-4xl">graphic_eq</span>
-              </div>
+
               <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-br from-white to-slate-400 bg-clip-text text-transparent">
                 Ready to Analyze
               </h1>
@@ -167,11 +208,11 @@ export default function VoiceAgent() {
                 "Check BRCA1 variants"
               </button>
             </div>
-            
+
             <div className="mt-8 relative group">
               <div className="absolute inset-0 rounded-full border border-[#13b6ec]/20 scale-110 opacity-0 group-hover:scale-125 group-hover:opacity-100 transition-all duration-700 ease-out"></div>
               <div className="absolute inset-0 rounded-full border border-[#13b6ec]/10 scale-125 opacity-0 group-hover:scale-150 group-hover:opacity-100 transition-all duration-1000 delay-75 ease-out"></div>
-              <button 
+              <button
                 onClick={handleStartListening}
                 className="relative flex items-center justify-center h-20 w-20 rounded-full bg-[#18282e] border-2 border-[#13b6ec]/40 shadow-[0_0_30px_-5px_rgba(19,182,236,0.3)] hover:shadow-[0_0_50px_-5px_rgba(19,182,236,0.5)] hover:border-[#13b6ec] hover:bg-[#1e3239] transition-all duration-300 group-active:scale-95"
               >
@@ -198,7 +239,7 @@ export default function VoiceAgent() {
                   {agentState === "listening" ? "Listening Mode" : "Processing"}
                 </span>
               </div>
-              
+
               <div className="text-center min-h-[120px] flex items-center justify-center px-4 w-full">
                 <h1 className="font-syne text-3xl md:text-5xl font-bold leading-[1.3] text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 drop-shadow-sm transition-all duration-700">
                   {agentState === "listening" ? (transcript || "Listening...") : transcript}
@@ -207,17 +248,17 @@ export default function VoiceAgent() {
 
               {agentState === "listening" && (
                 <div className="h-24 flex items-end justify-center gap-3 my-4 w-full">
-                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.5s_ease-in-out_infinite] h-[40%]" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.1s_ease-in-out_infinite] h-[70%]" style={{animationDelay: '0.2s'}}></div>
+                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.5s_ease-in-out_infinite] h-[40%]" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.1s_ease-in-out_infinite] h-[70%]" style={{ animationDelay: '0.2s' }}></div>
                   <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.3s_ease-in-out_infinite] h-[100%]"></div>
-                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.2s_ease-in-out_infinite] h-[60%]" style={{animationDelay: '0.3s'}}></div>
-                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.4s_ease-in-out_infinite] h-[45%]" style={{animationDelay: '0.15s'}}></div>
+                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.2s_ease-in-out_infinite] h-[60%]" style={{ animationDelay: '0.3s' }}></div>
+                  <div className="w-3 rounded-full bg-gradient-to-t from-[#13b6ec]/40 to-[#13b6ec] shadow-[0_0_15px_rgba(19,182,236,0.5)] animate-[pulse_1.4s_ease-in-out_infinite] h-[45%]" style={{ animationDelay: '0.15s' }}></div>
                 </div>
               )}
 
               <div className="relative group mt-8">
                 <div className="absolute -inset-4 bg-[#13b6ec]/30 rounded-full blur-xl animate-pulse transition-all duration-500"></div>
-                <button 
+                <button
                   onClick={handleStop}
                   className="relative flex items-center justify-center size-20 rounded-full bg-gradient-to-b from-[#13b6ec] to-[#0e8db9] text-white shadow-[0_0_40px_-10px_rgba(19,182,236,0.6)] border-2 border-[#6ed6f5]/30 hover:scale-105 active:scale-95 transition-all duration-300"
                 >
@@ -267,7 +308,7 @@ export default function VoiceAgent() {
                 Agent Response
               </div>
               <h1 className="font-mono text-3xl md:text-4xl lg:text-5xl font-medium leading-[1.4] text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
-                 {response}
+                {response}
               </h1>
             </div>
 
@@ -280,7 +321,7 @@ export default function VoiceAgent() {
                   </div>
                   <span className="font-mono text-xs text-slate-500">00:04:12</span>
                 </div>
-                
+
                 {/* Waveform Visualization */}
                 <svg className="w-full h-32 text-[#13b6ec]" fill="none" preserveAspectRatio="none" viewBox="0 0 400 100">
                   <defs>
@@ -347,7 +388,6 @@ export default function VoiceAgent() {
         </div>
         <div className="flex gap-4">
           <span>Microphone Input: <span className="text-[#13b6ec] font-bold">High Quality</span></span>
-          <span>V 2.4.1</span>
         </div>
       </footer>
     </div>
