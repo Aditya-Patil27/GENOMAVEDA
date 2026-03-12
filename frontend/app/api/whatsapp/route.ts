@@ -45,6 +45,11 @@ async function sendWhatsAppReply(to: string, body: string): Promise<void> {
   const phoneId = process.env.META_WA_PHONE_ID;
   const token = process.env.META_WA_TOKEN;
 
+  if (!phoneId || !token) {
+    console.error("[whatsapp] META_WA_PHONE_ID or META_WA_TOKEN is missing.");
+    return;
+  }
+
   const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
     method: "POST",
     headers: {
@@ -62,6 +67,7 @@ async function sendWhatsAppReply(to: string, body: string): Promise<void> {
 
   if (!res.ok) {
     const err = await res.text();
+    console.error(`[whatsapp] Meta send failed: ${res.status} ${err}`);
     throw new Error(`Meta send failed: ${res.status} ${err}`);
   }
 }
