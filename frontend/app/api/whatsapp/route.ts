@@ -77,17 +77,17 @@ async function generateMarathiTTS(text: string): Promise<Buffer | null> {
   if (!sarvamApiKey) return null;
 
   try {
-    const res = await fetch("https://api.sarvam.ai/v1/text-to-speech", {
+    const res = await fetch("https://api.sarvam.ai/text-to-speech", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "api-subscription-key": sarvamApiKey
       },
       body: JSON.stringify({
-        inputs: [text.slice(0, 500)], // Sarvam TTS limit for text
-        target_language_code: "mr-IN",
-        speaker: "meera",
-        model: "bulbul:v1"
+        input: text.slice(0, 2500), // Updated karakter limit for v3
+        language_code: "mr-IN",
+        speaker: "aditya", // Updated to a confirmed valid voice for v3
+        model: "bulbul:v3"
       }),
       signal: AbortSignal.timeout(15_000)
     });
