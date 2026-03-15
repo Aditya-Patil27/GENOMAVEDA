@@ -22,10 +22,11 @@ export default function RweFeedbackLoop() {
         <div>
           <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Activity className="w-5 h-5 text-emerald-400" />
-            Real-World Evidence (RWE) Feedback Loop
+            Real-World Evidence (RWE) Feedback Loop — Demo
           </h3>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Live telemetry connecting clinical prescriber behavior (EHR) with patient outcomes. Validates existing CPIC guidelines and flags anomalies where real-world reactions diverge from genomic predictions.
+            Conceptual example of how live telemetry could connect prescriber behavior (EHR) with outcomes to validate CPIC guidelines
+            and flag anomalies where real-world reactions diverge from genomic predictions. Numbers and events below are synthetic for demo purposes.
           </p>
         </div>
       </div>
@@ -33,7 +34,7 @@ export default function RweFeedbackLoop() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5 md:col-span-2 flex items-center justify-between">
           <div>
-            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Guideline Concordance</p>
+            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Guideline Concordance (simulated)</p>
             <p className="text-3xl font-bold text-slate-100">89.4%</p>
             <p className="text-xs text-emerald-400 mt-1">Prescribers following AI alerts</p>
           </div>
@@ -43,7 +44,7 @@ export default function RweFeedbackLoop() {
         </div>
         
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5 md:col-span-2 flex flex-col justify-center">
-          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Clinical Override Rate</p>
+          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Clinical Override Rate (simulated)</p>
           <div className="flex items-end gap-3">
              <p className="text-3xl font-bold text-amber-400">10.6%</p>
              <p className="text-xs text-slate-400 mb-1 tracking-wide">12,403 overrides this month</p>
@@ -57,7 +58,7 @@ export default function RweFeedbackLoop() {
       <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
           <h4 className="font-semibold text-slate-200 flex items-center gap-2">
-            <Database className="w-4 h-4 text-slate-400" /> Live Telemetry Feed
+            <Database className="w-4 h-4 text-slate-400" /> Telemetry Feed (synthetic events)
           </h4>
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 relative">

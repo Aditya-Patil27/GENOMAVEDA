@@ -9,12 +9,14 @@ import CpicEvidenceExplorer from "@/components/CpicEvidenceExplorer";
 import VusDiscovery from "@/components/VusDiscovery";
 import PopulationHeatmap from "@/components/PopulationHeatmap";
 import RweFeedbackLoop from "@/components/RweFeedbackLoop";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type TabKey = "vcf" | "evidence" | "vus" | "heatmap" | "rwe";
 
 export default function ResearcherPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("vcf");
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-slate-900/50 backdrop-blur-sm">
@@ -32,8 +34,12 @@ export default function ResearcherPage() {
                 className="object-contain"
               />
               <div>
-                <h1 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>GenomaVeda</h1>
-                <p className="text-[10px] tracking-wider text-teal-400 font-medium uppercase mt-0.5">RESEARCHER SANDBOX</p>
+                <h1 className="text-xl font-bold text-slate-100 tracking-wide" style={{ fontFamily: "Syne, sans-serif" }}>
+                  {t("landing.brand")}
+                </h1>
+                <p className="text-[10px] tracking-wider text-teal-400 font-medium uppercase mt-0.5">
+                  {t("researcher.badge_sandbox")}
+                </p>
               </div>
             </div>
 
@@ -41,11 +47,11 @@ export default function ResearcherPage() {
             <div className="flex items-center gap-2">
               <span className="clinical-badge bg-amber-500/10 border border-amber-500/30 text-amber-400">
                 <Beaker className="w-3 h-3 mr-1.5" />
-                SYNTHETIC DATA ONLY
+                {t("researcher.badge_synthetic_only")}
               </span>
               <span className="clinical-badge bg-slate-800 border border-slate-700 text-slate-300">
                 <FileText className="w-3 h-3 mr-1.5" />
-                CPIC v1.9
+                {t("researcher.badge_cpic_version")}
               </span>
             </div>
           </div>
@@ -62,15 +68,14 @@ export default function ResearcherPage() {
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Patient View
+            {t("researcher.back_to_patient")}
           </button>
 
           <h2 className="text-3xl font-semibold text-slate-100 mb-2">
-            Pharmacogenomics Research Tools
+            {t("researcher.title")}
           </h2>
           <p className="text-slate-400 max-w-2xl">
-            Advanced utilities for bioinformatics algorithm validation and clinical evidence exploration.
-            Generate mathematically accurate synthetic VCF payloads or query the CPIC knowledge base directly.
+            {t("researcher.subtitle")}
           </p>
         </div>
 
@@ -87,7 +92,7 @@ export default function ResearcherPage() {
             `}
           >
             <Beaker className="w-4 h-4" />
-            Synthetic Cohorts
+            {t("researcher.tab_vcf")}
           </button>
 
           <button
@@ -101,7 +106,7 @@ export default function ResearcherPage() {
             `}
           >
             <Search className="w-4 h-4" />
-            VUS Discovery
+            {t("researcher.tab_vus")}
           </button>
 
           <button
@@ -115,7 +120,7 @@ export default function ResearcherPage() {
             `}
           >
             <Map className="w-4 h-4" />
-            Population Heatmap
+            {t("researcher.tab_heatmap")}
           </button>
 
           <button
@@ -129,7 +134,7 @@ export default function ResearcherPage() {
             `}
           >
             <Activity className="w-4 h-4" />
-            RWE Feedback
+            {t("researcher.tab_rwe")}
           </button>
 
           <button
@@ -143,7 +148,7 @@ export default function ResearcherPage() {
             `}
           >
             <Database className="w-4 h-4" />
-            CPIC Guidelines
+            {t("researcher.tab_evidence")}
           </button>
         </div>
 

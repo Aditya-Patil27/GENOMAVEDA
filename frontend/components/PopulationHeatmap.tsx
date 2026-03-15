@@ -10,10 +10,11 @@ export default function PopulationHeatmap() {
         <div>
           <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Map className="w-5 h-5 text-blue-400" />
-            Population-Level Pharmacovigilance
+            Population-Level Pharmacovigilance (Simulated)
           </h3>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Aggregated demographic and geographic heatmap of metaboliser phenotypes. Allows pharma companies and policymakers to optimize drug distribution and clinical trial diversity based on regional genetic profiles.
+            Illustrative heatmap based on published CPIC/gnomAD-style allele frequency patterns.
+            Intended to show how regional metaboliser phenotypes could guide drug distribution and trial diversity — this view does not use live patient data.
           </p>
         </div>
       </div>
@@ -23,7 +24,9 @@ export default function PopulationHeatmap() {
         {/* Mock Map View */}
         <div className="lg:col-span-2 bg-slate-900 border border-slate-700 rounded-xl overflow-hidden flex flex-col">
           <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
-            <span className="font-semibold text-slate-200 text-sm">Global Distribution: CYP2C19 Poor Metabolizers</span>
+            <span className="font-semibold text-slate-200 text-sm">
+              Global Distribution: CYP2C19 Poor Metabolizers (example cohort)
+            </span>
             <select className="bg-slate-800 border border-slate-600 text-xs text-slate-300 rounded px-2 py-1 outline-none">
                <option>CYP2C19 (Clopidogrel)</option>
                <option>CYP2D6 (Codeine)</option>

@@ -20,7 +20,8 @@ export default function VusDiscovery() {
             Variants of Unknown Significance (VUS) Discovery Engine
           </h3>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Leverages unsupervised clustering algorithms to monitor unmapped genetic mutations across the patient network. Detects statistical correlations between VUS presence and elevated Adverse Drug Reactions (ADRs).
+            Simulated demo view of how an unsupervised clustering engine could monitor unmapped genetic mutations across a cohort
+            and correlate VUS presence with elevated Adverse Drug Reactions (ADRs). Metrics below are illustrative only, not live patient data.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -33,12 +34,12 @@ export default function VusDiscovery() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
-           <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Monitored VUS</p>
+           <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Monitored VUS (simulated)</p>
            <p className="text-3xl font-bold text-slate-100">14,293</p>
            <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +124 this week</p>
         </div>
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
-           <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Emerging Clusters</p>
+           <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Emerging Clusters (simulated)</p>
            <p className="text-3xl font-bold text-slate-100">3</p>
            <p className="text-xs text-amber-400 mt-2 flex items-center gap-1"><Activity className="w-3 h-3" /> Requiring clinical review</p>
         </div>

@@ -197,12 +197,12 @@ export default function SyntheticVcfGenerator() {
           <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
             <h4 className="text-xs font-semibold text-amber-400 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-3 h-3" />
-              Research Use Only
+              Research Use Only — Synthetic Sequences
             </h4>
             <p className="text-xs text-amber-500/80 leading-relaxed">
-              This tool generates synthetic sequence data for algorithm validation.
-              Output files are mathematically accurate but do not represent real human subjects.
-              Safe for use in public demos and unencrypted environments.
+              This tool generates synthetic sequence data for algorithm validation and demos.
+              Positions, rsIDs and star alleles are grounded in CPIC-style variant mappings, but the VCFs do not represent real human subjects
+              and should never be used for clinical decision making.
             </p>
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function SyntheticVcfGenerator() {
               className="mt-4 w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-4 py-3 rounded-lg font-medium transition-colors"
             >
               <Download className="w-4 h-4" />
-              Download Single .vcf
+              Download Synthetic .vcf
             </button>
             <button
               onClick={handleBulkGenerate}

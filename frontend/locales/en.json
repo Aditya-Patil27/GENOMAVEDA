@@ -101,5 +101,18 @@
     "report_id_label": "Report ID",
     "voice_cta_title": "Ask GenomaVeda Voice",
     "voice_cta_subtitle": "Immersive Voice Clinical Assistant"
+  },
+  "researcher": {
+    "badge_sandbox": "RESEARCHER SANDBOX",
+    "badge_synthetic_only": "SYNTHETIC DATA ONLY",
+    "badge_cpic_version": "CPIC v1.9",
+    "back_to_patient": "Back to Patient View",
+    "title": "Pharmacogenomics Research Tools",
+    "subtitle": "Advanced utilities for bioinformatics algorithm validation and clinical evidence exploration. Generate mathematically accurate synthetic VCF payloads or query the CPIC knowledge base directly.",
+    "tab_vcf": "Synthetic Cohorts",
+    "tab_vus": "VUS Discovery",
+    "tab_heatmap": "Population Heatmap",
+    "tab_rwe": "RWE Feedback",
+    "tab_evidence": "CPIC Guidelines"
   }
 }
