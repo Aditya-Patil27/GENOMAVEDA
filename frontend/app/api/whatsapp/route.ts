@@ -126,8 +126,9 @@ async function uploadMediaToWhatsApp(buffer: Buffer, mimeType: string): Promise<
 
   const formData = new FormData();
   formData.append("messaging_product", "whatsapp");
-  // Meta requires a concrete, supported MIME type; ensure the Blob carries it so we don't get application/octet-stream.
-  formData.append("file", new Blob([new Uint8Array(buffer)], { type: mimeType }), "audio.mp3");
+  // Use File so undici sets the correct per-part Content-Type instead of falling back to application/octet-stream.
+  const file = new File([buffer], "audio.mp3", { type: mimeType });
+  formData.append("file", file);
 
   try {
     const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/media`, {
