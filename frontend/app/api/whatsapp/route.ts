@@ -126,7 +126,8 @@ async function uploadMediaToWhatsApp(buffer: Buffer, mimeType: string): Promise<
 
   const formData = new FormData();
   formData.append("messaging_product", "whatsapp");
-  formData.append("file", new Blob([new Uint8Array(buffer)]), "audio.wav");
+  // Meta requires a concrete, supported MIME type; ensure the Blob carries it so we don't get application/octet-stream.
+  formData.append("file", new Blob([new Uint8Array(buffer)], { type: mimeType }), "audio.mp3");
 
   try {
     const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/media`, {
@@ -381,7 +382,8 @@ export async function POST(request: Request) {
       // TTS generation for Explanation
       const audioBuffer = await generateMarathiTTS(explanation);
       if (audioBuffer) {
-        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/wav");
+        // WhatsApp Cloud supports audio/mpeg, audio/ogg, etc. Sarvam returns base64 audio we can safely label as audio/mpeg for playback.
+        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/mpeg");
         if (mediaId) {
           await sendWhatsAppAudio(from, mediaId);
         }
@@ -395,7 +397,7 @@ export async function POST(request: Request) {
       // TTS generation for generic Text Chat
       const audioBuffer = await generateMarathiTTS(reply);
       if (audioBuffer) {
-        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/wav");
+        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/mpeg");
         if (mediaId) {
           await sendWhatsAppAudio(from, mediaId);
         }
