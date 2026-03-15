@@ -9,11 +9,13 @@ import ProgressIndicator from "@/components/ProgressIndicator";
 import ProcessingOverlay from "@/components/ProcessingOverlay";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 import { Bot } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ReportPage() {
   const router = useRouter();
   const { analysisResult } = usePharmaGuard();
   const [showOverlay, setShowOverlay] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Route Guard: Redirect if no results
@@ -80,14 +82,14 @@ export default function ReportPage() {
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {t("flow.back")}
           </button>
         </div>
         <h2 className="text-2xl font-semibold text-slate-100 mb-2">
-          Pharmacogenomic Risk Assessment Platform
+          {t("flow.title")}
         </h2>
         <p className="text-sm text-slate-400">
-          Precision medicine, decoded. Upload multi-gene VCF sequences to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.
+          {t("flow.subtitle_multi")}
         </p>
       </div>
 
@@ -101,10 +103,10 @@ export default function ReportPage() {
               <div className="step-indicator bg-teal-500/10 text-teal-500 border border-teal-500/30">
                 3
               </div>
-              <h3 className="text-lg font-semibold text-slate-100">Risk Assessment Report</h3>
+              <h3 className="text-lg font-semibold text-slate-100">{t("flow.step3_title")}</h3>
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              Report ID: PG-38621
+              {t("flow.report_id_label")}: PG-38621
             </span>
           </div>
 
@@ -119,8 +121,8 @@ export default function ReportPage() {
                 <Bot className="w-5 h-5 text-teal-400" />
               </div>
               <div className="text-left">
-                <p className="text-slate-200 font-semibold leading-tight">Ask GenomaVeda Voice</p>
-                <p className="text-slate-400 text-xs mt-0.5">Immersive Voice Clinical Assistant</p>
+                <p className="text-slate-200 font-semibold leading-tight">{t("flow.voice_cta_title")}</p>
+                <p className="text-slate-400 text-xs mt-0.5">{t("flow.voice_cta_subtitle")}</p>
               </div>
             </button>
           </div>

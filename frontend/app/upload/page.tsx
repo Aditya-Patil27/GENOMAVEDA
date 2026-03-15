@@ -10,10 +10,12 @@ import { parseVCF, ParsedVCF } from "@/lib/vcf-parser";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 import { isPrivateBrowsing, checkEviction, saveToVault } from "@/lib/db";
 import { AlertCircle, FileWarning } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function UploadPage() {
   const router = useRouter();
   const { setParsedVCFData, setDetectedGenes } = usePharmaGuard();
+  const { t } = useTranslation();
   const [isPrivate, setIsPrivate] = React.useState(false);
   const [evicted, setEvicted] = React.useState(false);
 
@@ -110,18 +112,18 @@ export default function UploadPage() {
       {/* Main Title */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <h2 className="text-2xl font-semibold text-slate-100 mb-2">
-          Pharmacogenomic Risk Assessment Platform
+          {t("flow.title")}
         </h2>
         <p className="text-sm text-slate-400">
-          Precision medicine, decoded. Upload VCF sequences or 23andMe/AncestryDNA raw data to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.
+          {t("flow.subtitle_upload")}
         </p>
 
         {isPrivate && (
           <div className="mt-4 flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 animate-pulse">
             <FileWarning className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold">Private Browsing Detected</p>
-              <p className="text-xs opacity-80">Local storage vault may be disabled or easily cleared. Your genomic phenotype hash may not persist across sessions.</p>
+              <p className="text-sm font-semibold">{t("flow.private_browsing_title")}</p>
+              <p className="text-xs opacity-80">{t("flow.private_browsing_body")}</p>
             </div>
           </div>
         )}
@@ -130,8 +132,8 @@ export default function UploadPage() {
           <div className="mt-4 flex items-start gap-3 p-4 bg-crimson-500/10 border border-crimson-500/30 rounded-lg text-crimson-400">
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold">Vault Eviction Detected</p>
-              <p className="text-xs opacity-80">Your previous genomic profile was cleared by your device OS to save space. Please re-initialize the vault by uploading your VCF again.</p>
+              <p className="text-sm font-semibold">{t("flow.vault_eviction_title")}</p>
+              <p className="text-xs opacity-80">{t("flow.vault_eviction_body")}</p>
             </div>
           </div>
         )}
@@ -145,9 +147,9 @@ export default function UploadPage() {
               1
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-100">Upload Genomic Data</h3>
+              <h3 className="text-lg font-semibold text-slate-100">{t("flow.step1_title")}</h3>
               <p className="text-xs text-slate-400">
-                Standard Variant Call Format (.vcf) or Consumer DNA text files (23andMe, AncestryDNA).
+                {t("flow.step1_body")}
               </p>
 
             </div>

@@ -34,7 +34,9 @@ interface ChatMessage {
 const userSessions = new Map<string, ChatMessage[]>();
 const MAX_HISTORY = 10;
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB — WhatsApp images can be large
+// Groq vision docs: base64 image payloads must be <= 4MB.
+// We enforce a conservative 4MB limit on downloaded media before base64 encoding.
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 function verifyMetaSignature(rawBody: string, signature: string | null): boolean {
   const appSecret = process.env.META_WA_APP_SECRET;
@@ -216,7 +218,8 @@ async function identifyDrugFromMediaId(mediaId: string): Promise<string | null> 
   const dataUrl = `data:${mimeType};base64,${base64}`;
 
     const completion = await groq.chat.completions.create({
-    model: "llama-3.2-11b-vision-preview",
+    // Groq Docs: meta-llama/llama-4-scout-17b-16e-instruct is the recommended multimodal vision model
+    model: "meta-llama/llama-4-scout-17b-16e-instruct",
     messages: [
       {
         role: "user",

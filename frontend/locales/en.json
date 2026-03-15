@@ -71,8 +71,35 @@
       "retry": "RETRY",
       "error_identify": "Could not confidently identify the active ingredient."
     }
+  },
+  "landing": {
+    "brand": "GenomaVeda",
+    "hero_line1": "100,000 preventable deaths.",
+    "hero_line2": "Your genome knows the reason.",
+    "subheadline": "PharmaGuard analyzes your VCF file against 6 genes and CPIC guidelines — entirely inside your browser. Your DNA never leaves this tab.",
+    "cta_analyze": "Analyze Your Genome",
+    "feature_title": "Platform Intelligence",
+    "matrix_title": "Clinical Deterministic Matrix"
+  },
+  "flow": {
+    "title": "Pharmacogenomic Risk Assessment Platform",
+    "subtitle_upload": "Precision medicine, decoded. Upload VCF sequences or 23andMe/AncestryDNA raw data to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.",
+    "subtitle_multi": "Precision medicine, decoded. Upload multi-gene VCF sequences to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.",
+    "private_browsing_title": "Private Browsing Detected",
+    "private_browsing_body": "Local storage vault may be disabled or easily cleared. Your genomic phenotype hash may not persist across sessions.",
+    "vault_eviction_title": "Vault Eviction Detected",
+    "vault_eviction_body": "Your previous genomic profile was cleared by your device OS to save space. Please re-initialize the vault by uploading your VCF again.",
+    "step1_title": "Upload Genomic Data",
+    "step1_body": "Standard Variant Call Format (.vcf) or Consumer DNA text files (23andMe, AncestryDNA).",
+    "step2_title": "Select Target Drug",
+    "step2_body": "Choose the pharmaceutical agent to evaluate against the genomic profile.",
+    "analyzing_button": "Analyzing Genomic Profile...",
+    "analyze_button": "Generate Risk Assessment",
+    "select_at_least_one": "Select at least one drug to continue",
+    "back": "Back",
+    "step3_title": "Risk Assessment Report",
+    "report_id_label": "Report ID",
+    "voice_cta_title": "Ask GenomaVeda Voice",
+    "voice_cta_subtitle": "Immersive Voice Clinical Assistant"
   }
 }
-
-
-

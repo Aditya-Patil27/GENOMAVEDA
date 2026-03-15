@@ -33,6 +33,16 @@ export default function LanguageSwitcher() {
         >
           हि
         </button>
+        <button
+          onClick={() => setLocale("mr")}
+          className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-300 ${
+            locale === "mr"
+              ? "bg-teal-500 text-white shadow-[0_0_10px_rgba(20,184,166,0.3)]"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          मरा
+        </button>
       </div>
     </div>
   );

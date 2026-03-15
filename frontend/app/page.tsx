@@ -6,9 +6,11 @@ import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import FeatureCardsFan from "@/components/FeatureCardsFan";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function Home() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [showSplash, setShowSplash] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -49,7 +51,7 @@ export default function Home() {
               />
             </div>
             <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-[#F0F6FF] tracking-tight">
-              GenomaVeda
+              {t("landing.brand")}
             </h1>
           </div>
           <style jsx>{`
@@ -87,7 +89,7 @@ export default function Home() {
             className="object-contain drop-shadow-[0_0_24px_rgba(0,212,255,0.4)]"
           />
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#F0F6FF] tracking-tight" style={{ fontFamily: "Syne, sans-serif" }}>
-            GenomaVeda
+            {t("landing.brand")}
           </h1>
         </motion.div>
 
@@ -100,7 +102,7 @@ export default function Home() {
             transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
             className="text-[#F0F6FF]"
           >
-            100,000 preventable deaths.
+            {t("landing.hero_line1")}
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -108,7 +110,7 @@ export default function Home() {
             transition={{ duration: 0.4, delay: 0.4, ease: "easeOut" }}
             className="text-[#00D4FF]"
           >
-            Your genome knows the reason.
+            {t("landing.hero_line2")}
           </motion.div>
         </div>
 
@@ -119,7 +121,7 @@ export default function Home() {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="text-[#94A3B8] text-sm sm:text-base md:text-lg max-w-xl text-center leading-[1.7] mb-12 font-['Syne',sans-serif]"
         >
-          PharmaGuard analyzes your VCF file against 6 genes and CPIC guidelines — entirely inside your browser. Your DNA never leaves this tab.
+          {t("landing.subheadline")}
         </motion.p>
 
         {/* CTA Row */}
@@ -134,7 +136,7 @@ export default function Home() {
             className="group relative flex items-center justify-center gap-2 bg-[#00D4FF] hover:bg-[#00e5ff] text-[#040810] rounded-xl h-14 px-10 font-bold text-[15px] transition-all duration-300"
             style={{ boxShadow: "0 0 30px rgba(0,212,255,0.25), 0 4px 16px rgba(0,0,0,0.4)" }}
           >
-            Analyze Your Genome
+            {t("landing.cta_analyze")}
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </button>
         </motion.div>
@@ -150,14 +152,16 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             className="text-3xl md:text-4xl font-bold text-center mb-16 tracking-tight text-[#F0F6FF]"
           >
-            Platform Intelligence
+            {t("landing.feature_title")}
           </motion.h2>
           <FeatureCardsFan />
         </div>
 
         {/* Bottom: Gene x Drug Matrix */}
         <div className="w-full max-w-5xl mt-20 mb-32">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-10 tracking-tight text-[#F0F6FF]">Clinical Deterministic Matrix</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-10 tracking-tight text-[#F0F6FF]">
+            {t("landing.matrix_title")}
+          </h2>
           <GeneDrugMatrix />
         </div>
 

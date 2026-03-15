@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import en from "../locales/en.json";
 import hi from "../locales/hi.json";
+import mr from "../locales/mr.json";
 
-type Locale = "en" | "hi";
+type Locale = "en" | "hi" | "mr";
 type Translations = typeof en;
 
 interface LanguageContextType {
@@ -13,7 +14,7 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const translations: Record<Locale, Translations> = { en, hi };
+const translations: Record<Locale, Translations> = { en, hi, mr };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -23,7 +24,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Load locale from localStorage on mount
   useEffect(() => {
     const savedLocale = localStorage.getItem("pharmaguard_locale") as Locale;
-    if (savedLocale && (savedLocale === "en" || savedLocale === "hi")) {
+    if (savedLocale && (savedLocale === "en" || savedLocale === "hi" || savedLocale === "mr")) {
       setLocaleState(savedLocale);
     }
   }, []);

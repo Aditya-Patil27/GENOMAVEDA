@@ -12,10 +12,12 @@ import { resolveDiplotype } from "@/lib/diplotype-lookup";
 import { assessRisk } from "@/lib/risk-engine";
 import { usePharmaGuard } from "@/context/PharmaGuardContext";
 import { anonymizePatientId } from "@/lib/patient-id";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function SelectDrugPage() {
   const router = useRouter();
   const { parsedVCFData, detectedGenes, setSelectedDrug, setAnalysisResult } = usePharmaGuard();
+  const { t } = useTranslation();
   const [selectedDrugs, setSelectedDrugs] = useState<Drug[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -234,14 +236,14 @@ export default function SelectDrugPage() {
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {t("flow.back")}
           </button>
         </div>
         <h2 className="text-2xl font-semibold text-slate-100 mb-2">
-          Pharmacogenomic Risk Assessment Platform
+          {t("flow.title")}
         </h2>
         <p className="text-sm text-slate-400">
-          Precision medicine, decoded. Upload multi-gene VCF sequences to predict drug-gene interaction risks using CPIC-aligned clinical guidelines.
+          {t("flow.subtitle_multi")}
         </p>
       </div>
 
@@ -254,9 +256,9 @@ export default function SelectDrugPage() {
                 2
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-100">Select Target Drug</h3>
+                <h3 className="text-lg font-semibold text-slate-100">{t("flow.step2_title")}</h3>
                 <p className="text-xs text-slate-400">
-                  Choose the pharmaceutical agent to evaluate against the genomic profile.
+                  {t("flow.step2_body")}
                 </p>
               </div>
             </div>
@@ -283,12 +285,12 @@ export default function SelectDrugPage() {
               {isAnalyzing ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing Genomic Profile...
+                  {t("flow.analyzing_button")}
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
                   <Pill className="w-4 h-4" />
-                  Generate Risk Assessment
+                  {t("flow.analyze_button")}
                 </span>
               )}
             </button>
@@ -298,7 +300,7 @@ export default function SelectDrugPage() {
           {selectedDrugs.length === 0 && (
             <div className="mt-4 p-3 bg-slate-700/30 border border-slate-600 rounded-lg">
               <p className="text-xs text-slate-400 text-center">
-                Select at least one drug to continue
+                {t("flow.select_at_least_one")}
               </p>
             </div>
           )}
