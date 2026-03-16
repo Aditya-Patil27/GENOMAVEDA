@@ -98,9 +98,11 @@ async function generateMarathiTTS(text: string): Promise<Buffer | null> {
       body: JSON.stringify({
         text: text.slice(0, 2500),
         language_code: "mr-IN",
-        speaker: "rahul",
-        model: "bulbul:v3",
-        pace: 1.65
+        speaker: "aditya",
+        pace: 1.0,
+        speech_sample_rate: 8000,
+        enable_preprocessing: true,
+        model: "bulbul:v3"
       }),
       signal: AbortSignal.timeout(15_000)
     });
